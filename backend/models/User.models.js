@@ -10,7 +10,11 @@ const userSchema = new mongoose.Schema(
     mobile: {
       type: String,
       required: true,
-      unique: true, 
+      unique: true,  
+    },
+    password: {
+      type: String,
+      required: true,
     },
     role: {
       type: String,
@@ -18,12 +22,12 @@ const userSchema = new mongoose.Schema(
       default: "User",
     },
     otp: {
-      code: { type: String },  
-      expiry: { type: Date },   
+      code: { type: String }, 
+      expiry: { type: Date },
     },
     isVerified: {
       type: Boolean,
-      default: false,          
+      default: false,
     },
   },
   { timestamps: true }
