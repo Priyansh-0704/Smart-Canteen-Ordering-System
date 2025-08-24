@@ -75,6 +75,61 @@ export const verifyRegisterOtp = async (req, res) => {
   }
 };
 
+// controllers/auth.controller.js
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { mobile } = req.body;
+    const user = await User.findOne({}); // since you’re hashing mobile, adapt check like in login
+
+    let matchedUser = null;
+    const users = await User.find();
+    for (let u of users) {
+      const isMatch = await bcrypt.compare(mobile, u.mobile);
+      if (isMatch) {
+        matchedUser = u;
+        break;
+      }
+    }
+
+    if (!matchedUser) {
+      return res.status(404).json({ message: "User not found with this number" });
+    }
+
+    const sessionId = await sendOtpSMS(mobile);
+    otpSessions[mobile] = { sessionId, userId: matchedUser._id };
+
+    res.json({ message: "OTP sent to your mobile" });
+  } catch (err) {
+    res.status(500).json({ message: "Error sending OTP", error: err.message });
+  }
+};
+
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const { mobile, otp, newPassword } = req.body;
+    const sessionData = otpSessions[mobile];
+
+    if (!sessionData) {
+      return res.status(400).json({ message: "OTP session expired or not found" });
+    }
+
+    const isValid = await verifyOtpSMS(sessionData.sessionId, otp);
+    if (!isValid) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await User.findByIdAndUpdate(sessionData.userId, { password: hashedPassword });
+
+    delete otpSessions[mobile];
+
+    res.json({ message: "Password reset successful. Please login with your new password." });
+  } catch (err) {
+    res.status(500).json({ message: "Error resetting password", error: err.message });
+  }
+};
+
 // Login
 export const loginUser = async (req, res) => {
   try {

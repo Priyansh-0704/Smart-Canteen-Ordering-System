@@ -6,12 +6,12 @@ import { useNavigate, Link } from "react-router-dom";
 export default function SignIn() {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); 
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
-      setError(""); 
+      setError("");
       const res = await axios.post("http://localhost:1230/api/v1/auth/login", { mobile, password });
       localStorage.setItem("token", res.data.token);
 
@@ -21,7 +21,7 @@ export default function SignIn() {
       navigate("/");
     } catch (err) {
       console.error(err.response?.data);
-      setError(err.response?.data?.message || "Login failed. Try again."); 
+      setError(err.response?.data?.message || "Login failed. Try again.");
     }
   };
 
@@ -62,12 +62,19 @@ export default function SignIn() {
           Sign In
         </button>
 
+        <p className="mt-3 text-center">
+          <Link to="/forgot-password" className="text-amber-700 font-semibold hover:underline">
+            Forgot Password?
+          </Link>
+        </p>
+
         <p className="mt-6 text-center text-gray-800">
           New here?{" "}
           <Link to="/register" className="text-orange-800 font-semibold hover:underline">
             Create an Account
           </Link>
         </p>
+
       </div>
     </div>
   );
