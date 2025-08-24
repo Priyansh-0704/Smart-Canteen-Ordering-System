@@ -29,10 +29,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    canteenId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Canteen",
+      default: null,
+    },
   },
   { timestamps: true }
 );
 
 const User = mongoose.model("User", userSchema);
-
 export default User;
