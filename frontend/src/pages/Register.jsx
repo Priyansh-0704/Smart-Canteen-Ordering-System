@@ -10,10 +10,12 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [showOtp, setShowOtp] = useState(false);
+  const [error, setError] = useState(""); // 👈 new error state
   const navigate = useNavigate();
 
   const handleRegister = async () => {
     try {
+      setError(""); // reset old errors
       await axios.post("http://localhost:1230/api/v1/auth/register", {
         name,
         mobile,
@@ -22,6 +24,7 @@ export default function Register() {
       setShowOtp(true);
     } catch (err) {
       console.error(err.response?.data);
+      setError(err.response?.data?.message || "Registration failed. Try again."); // 👈 set error
     }
   };
 
@@ -29,9 +32,12 @@ export default function Register() {
     try {
       const res = await axios.post("http://localhost:1230/api/v1/auth/verify-otp", { mobile, otp });
       localStorage.setItem("token", res.data.token);
+
+      window.dispatchEvent(new Event("storage"));
       navigate("/");
     } catch (err) {
       console.error(err.response?.data);
+      setError(err.response?.data?.message || "OTP verification failed."); // 👈 show OTP error
     }
   };
 
@@ -45,27 +51,16 @@ export default function Register() {
           Create Account
         </h2>
 
-        <FormInput
-          label="Full Name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          icon="user"
-        />
-        <FormInput
-          label="Mobile Number"
-          type="text"
-          value={mobile}
-          onChange={(e) => setMobile(e.target.value)}
-          icon="phone"
-        />
-        <FormInput
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          icon="lock"
-        />
+        <FormInput label="Full Name" type="text" value={name} onChange={(e) => setName(e.target.value)} icon="user" />
+        <FormInput label="Mobile Number" type="text" value={mobile} onChange={(e) => setMobile(e.target.value)} icon="phone" />
+        <FormInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} icon="lock" />
+
+        {/* 👇 Show error here */}
+        {error && (
+          <p className="text-red-600 text-sm font-medium mb-3 text-center">
+            {error}
+          </p>
+        )}
 
         <button
           onClick={handleRegister}
@@ -76,10 +71,7 @@ export default function Register() {
 
         <p className="mt-6 text-center text-gray-800">
           Already have an account?{" "}
-          <Link
-            to="/signin"
-            className="text-orange-800 font-semibold hover:underline"
-          >
+          <Link to="/signin" className="text-orange-800 font-semibold hover:underline">
             Sign In
           </Link>
         </p>

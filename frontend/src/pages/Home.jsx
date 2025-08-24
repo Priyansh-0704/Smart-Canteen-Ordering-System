@@ -5,7 +5,7 @@ export default function Home() {
       style={{ backgroundImage: "url('/images/background.jpg')" }} // keep your image in public/images
     >
       {/* Dark overlay for contrast */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-black/60"></div>
 
       {/* Content */}
       <div className="relative z-10 max-w-3xl text-white">
