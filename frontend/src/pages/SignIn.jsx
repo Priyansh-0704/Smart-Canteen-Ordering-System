@@ -9,26 +9,33 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    try {
-      setError("");
-      const res = await axios.post("http://localhost:1230/api/v1/auth/login", { mobile, password });
-      localStorage.setItem("token", res.data.token);
+const handleLogin = async () => {
+  try {
+    setError("");
+    const res = await axios.post("http://localhost:1230/api/v1/auth/login", { mobile, password });
+    console.log("Login Response:", res.data)
 
-      // Trigger Navbar update
-      window.dispatchEvent(new Event("storage"));
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("role", res.data.role); 
+    window.dispatchEvent(new Event("storage"));
 
-      navigate("/");
-    } catch (err) {
-      console.error(err.response?.data);
-      setError(err.response?.data?.message || "Login failed. Try again.");
-    }
-  };
+  if (res.data.role === "CanteenAdmin") {
+  navigate(`/canteen-dashboard/${res.data.canteenId}`);
+} else if (res.data.role === "Admin") {
+  navigate("/admin-dashboard");
+} else {
+  navigate("/");
+}
+  } catch (err) {
+    console.error(err.response?.data);
+    setError(err.response?.data?.message || "Login failed. Try again.");
+  }
+};
 
   return (
     <div
       className="flex items-center justify-center min-h-screen bg-cover bg-center px-4"
-      style={{ backgroundImage: "url('/images/background.jpg')" }} // 👈 same as Register page
+      style={{ backgroundImage: "url('/images/background.jpg')" }} 
     >
       <div className="w-full max-w-md bg-white/30 backdrop-blur-xl shadow-xl rounded-2xl p-8 border border-amber-200/60">
         <h2 className="text-3xl font-extrabold text-center text-amber-900 mb-6">Welcome Back</h2>
@@ -48,7 +55,7 @@ export default function SignIn() {
           icon="lock"
         />
 
-        {/* Error message */}
+        
         {error && (
           <p className="text-red-600 text-sm font-medium mb-3 text-center">
             {error}

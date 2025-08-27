@@ -10,12 +10,12 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [showOtp, setShowOtp] = useState(false);
-  const [error, setError] = useState(""); // 👈 new error state
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleRegister = async () => {
     try {
-      setError(""); // reset old errors
+      setError(""); 
       await axios.post("http://localhost:1230/api/v1/auth/register", {
         name,
         mobile,
@@ -24,7 +24,7 @@ export default function Register() {
       setShowOtp(true);
     } catch (err) {
       console.error(err.response?.data);
-      setError(err.response?.data?.message || "Registration failed. Try again."); // 👈 set error
+      setError(err.response?.data?.message || "Registration failed. Try again.");
     }
   };
 
@@ -37,7 +37,7 @@ export default function Register() {
       navigate("/");
     } catch (err) {
       console.error(err.response?.data);
-      setError(err.response?.data?.message || "OTP verification failed."); // 👈 show OTP error
+      setError(err.response?.data?.message || "OTP verification failed."); 
     }
   };
 
@@ -55,7 +55,7 @@ export default function Register() {
         <FormInput label="Mobile Number" type="text" value={mobile} onChange={(e) => setMobile(e.target.value)} icon="phone" />
         <FormInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} icon="lock" />
 
-        {/* 👇 Show error here */}
+       
         {error && (
           <p className="text-red-600 text-sm font-medium mb-3 text-center">
             {error}
