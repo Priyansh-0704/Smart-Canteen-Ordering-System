@@ -10,27 +10,27 @@ const userSchema = new mongoose.Schema(
     mobile: {
       type: String,
       required: true,
-      unique: true,  
+      unique: true, 
     },
     password: {
       type: String,
       required: true,
+      minlength: 6,
     },
     role: {
       type: String,
-      enum: ["User", "CanteenAdmin", "MainAdmin"],
+      enum: ["User", "CanteenAdmin", "Admin"],
       default: "User",
     },
     otp: {
-      code: { type: String }, 
+      code: { type: String },
       expiry: { type: Date },
     },
     isVerified: {
       type: Boolean,
       default: false,
     },
-
-    canteenId: {
+    canteen: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Canteen",
       default: null,
