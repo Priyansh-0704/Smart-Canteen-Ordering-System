@@ -8,7 +8,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import CanteenDashboard from "./pages/CanteenDashboard";
 
-
+import RegisterCanteen from "./pages/RegisterCanteen";
 
 function App() {
   return (
@@ -22,6 +22,8 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/canteen-dashboard" element={<CanteenDashboard />} />
+        
+        <Route path="/register-canteen" element={<RegisterCanteen />} />
       </Routes>
     </BrowserRouter>
   );
