@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
     mobile: {
       type: String,
       required: true,
-      unique: true, 
+      unique: true,
     },
     password: {
       type: String,
@@ -30,11 +30,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    canteen: {
+    canteens: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Canteen",
-      default: null,
-    },
+      ref: "Canteen"
+    }],
   },
   { timestamps: true }
 );

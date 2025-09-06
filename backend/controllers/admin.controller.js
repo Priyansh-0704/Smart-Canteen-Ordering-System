@@ -1,53 +1,105 @@
-import CanteenRequest from "../models/Canteenrequest.models.js";
 import Canteen from "../models/Canteen.models.js";
 import User from "../models/User.models.js";
 import bcrypt from "bcrypt";
 
-export const getAllRequests = async (req, res) => {
+export const adminCreateCanteen = async (req, res) => {
   try {
-    const requests = await CanteenRequest.find({ status: "pending" }).select("-adminPassword");
-    res.json(requests);
+    const { name, location, photos } = req.body;
+
+    if (!name || !location) {
+      return res.status(400).json({ message: "Name and location are required" });
+    }
+
+    const canteen = new Canteen({ name, location, photos });
+    await canteen.save();
+
+    res.status(201).json({ message: "Canteen created successfully", canteen });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-export const approveCanteenRequest = async (req, res) => {
+export const adminListCanteens = async (req, res) => {
   try {
-    const request = await CanteenRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: "Request not found" });
+    const canteens = await Canteen.find().populate("admins", "name mobile role");
+    res.json(canteens);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-    const canteen = new Canteen({
-      name: request.canteenName,
-      workingHours: request.workingHours
-    });
-    await canteen.save();
+export const adminUpdateCanteen = async (req, res) => {
+  try {
+    const { name, location, isOpen, photos } = req.body;
 
-    let user = await User.findOne({ mobile: request.adminMobile });
-    if (user) {
-      user.role = "CanteenAdmin";
-      user.canteen = canteen._id;
-      await user.save();
-    } else {
-      const hashedPassword = await bcrypt.hash(request.adminPassword, 10);
-      user = new User({
-        name: request.adminName,
-        mobile: request.adminMobile,
-        password: hashedPassword,
-        role: "CanteenAdmin",
-        canteen: canteen._id,
-        isVerified: true
-      });
-      await user.save();
+    const canteen = await Canteen.findByIdAndUpdate(
+      req.params.id,
+      { name, location, isOpen, photos },
+      { new: true }
+    );
+
+    if (!canteen) return res.status(404).json({ message: "Canteen not found" });
+
+    res.json({ message: "Canteen updated successfully", canteen });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const adminAddCanteenAdmin = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const canteenId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const canteen = await Canteen.findById(canteenId);
+    if (!canteen) return res.status(404).json({ message: "Canteen not found" });
+
+    // update user
+    if (!user.canteens.includes(canteenId)) {
+      user.canteens.push(canteenId);
     }
+    user.role = "CanteenAdmin";
+    await user.save();
 
-    canteen.admin = user._id;
+    // update canteen
+    if (!canteen.admins.includes(user._id)) {
+      canteen.admins.push(user._id);
+    }
     await canteen.save();
 
-    request.status = "approved";
-    await request.save();
+    res.json({ message: "Admin added to canteen successfully", user, canteen });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-    res.json({ message: "Canteen approved successfully", canteen, user });
+export const adminRemoveCanteenAdmin = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const canteen = await Canteen.findById(id);
+    if (!canteen) return res.status(404).json({ message: "Canteen not found" });
+
+    user.canteens = user.canteens.filter(
+      (cId) => cId.toString() !== canteen._id.toString()
+    );
+    if (user.canteens.length === 0) {
+      user.role = "User"; // fallback role
+    }
+    await user.save();
+
+    canteen.admins = canteen.admins.filter(
+      (aId) => aId.toString() !== user._id.toString()
+    );
+    await canteen.save();
+
+    res.json({ message: "Admin removed from canteen", user, canteen });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
