@@ -6,6 +6,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import canteenRoutes from "./routes/canteen.routes.js";
+import menuRoutes from "./routes/menu.routes.js";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v3/admin", adminRoutes);
 app.use("/api/v3/canteens", canteenRoutes);
+app.use("/api/v4/canteen-menu",menuRoutes)
 
 // Database connection
 const startServer = async () => {

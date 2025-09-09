@@ -13,24 +13,28 @@ const handleLogin = async () => {
   try {
     setError("");
     const res = await axios.post("http://localhost:1230/api/v1/auth/login", { mobile, password });
-    console.log("Login Response:", res.data)
-
+    console.log("Login Response:", res.data);
     localStorage.setItem("token", res.data.token);
-    localStorage.setItem("role", res.data.role); 
+    localStorage.setItem("role", res.data.role);
+    localStorage.setItem("mobile", res.data.mobile);
+    localStorage.setItem("name", res.data.name);
+
     window.dispatchEvent(new Event("storage"));
 
-  if (res.data.role === "CanteenAdmin") {
-  navigate(`/canteen-dashboard/${res.data.canteenId}`);
-} else if (res.data.role === "Admin") {
-  navigate("/admin-dashboard");
-} else {
-  navigate("/");
-}
+    // Navigate based on role
+    if (res.data.role === "CanteenAdmin") {
+      navigate("/canteen-dashboard");
+    } else if (res.data.role === "Admin") {
+      navigate("/admin-dashboard");
+    } else {
+      navigate("/");
+    }
   } catch (err) {
     console.error(err.response?.data);
     setError(err.response?.data?.message || "Login failed. Try again.");
   }
 };
+
 
   return (
     <div

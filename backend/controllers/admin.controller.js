@@ -1,6 +1,15 @@
 import Canteen from "../models/Canteen.models.js";
 import User from "../models/User.models.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const generateToken = (user) => {
+  return jwt.sign(
+    { id: user._id.toString(), role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "14d" }
+  );
+};
 
 export const adminCreateCanteen = async (req, res) => {
   try {
@@ -48,39 +57,69 @@ export const adminUpdateCanteen = async (req, res) => {
 
 export const adminAddCanteenAdmin = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { mobile, name, password } = req.body || {};
+
+    if (!mobile) {
+      return res.status(400).json({ message: "Mobile number is required in body" });
+    }
+
     const canteenId = req.params.id;
-
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
     const canteen = await Canteen.findById(canteenId);
     if (!canteen) return res.status(404).json({ message: "Canteen not found" });
 
-    // update user
-    if (!user.canteens.includes(canteenId)) {
-      user.canteens.push(canteenId);
-    }
-    user.role = "CanteenAdmin";
-    await user.save();
+    let user = await User.findOne({ mobile });
 
-    // update canteen
+    if (!user) {
+      if (!name || !password) {
+        return res.status(400).json({ message: "New user requires name and password" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user = new User({
+        name,
+        mobile,
+        password: hashedPassword,
+        role: "CanteenAdmin",
+        isVerified: true,
+        canteens: [canteen._id],
+      });
+      await user.save();
+    } else {
+      if (!user.canteens.includes(canteenId)) {
+        user.canteens.push(canteenId);
+      }
+      user.role = "CanteenAdmin";
+      await user.save();
+    }
+
     if (!canteen.admins.includes(user._id)) {
       canteen.admins.push(user._id);
     }
     await canteen.save();
 
-    res.json({ message: "Admin added to canteen successfully", user, canteen });
+    const token = generateToken(user);
+
+    res.json({
+      message: "Admin added successfully",
+      user,
+      canteen,
+      token,
+      role: user.role,
+    });
   } catch (err) {
+    console.error("❌ Error in adminAddCanteenAdmin:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 export const adminRemoveCanteenAdmin = async (req, res) => {
   try {
-    const { id, userId } = req.params;
+    const { id } = req.params;
+    const { mobile } = req.body;
 
-    const user = await User.findById(userId);
+    if (!mobile) return res.status(400).json({ message: "Mobile number is required" });
+
+    const user = await User.findOne({ mobile });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const canteen = await Canteen.findById(id);
@@ -90,7 +129,7 @@ export const adminRemoveCanteenAdmin = async (req, res) => {
       (cId) => cId.toString() !== canteen._id.toString()
     );
     if (user.canteens.length === 0) {
-      user.role = "User"; // fallback role
+      user.role = "User";
     }
     await user.save();
 

@@ -7,7 +7,7 @@ const otpSessions = {};
 
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user._id, role: user.role },
+    { id: user._id.toString(), role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: "14d" }
   );
@@ -46,7 +46,7 @@ export const verifyRegisterOtp = async (req, res) => {
 
     const user = new User({
       name: sessionData.name,
-      mobile: sessionData.mobile,       // ✅ unhashed mobile
+      mobile: sessionData.mobile,       
       password: sessionData.hashedPassword,
       isVerified: true,
       role: "User",
@@ -72,7 +72,7 @@ export const verifyRegisterOtp = async (req, res) => {
 export const requestPasswordReset = async (req, res) => {
   try {
     const { mobile } = req.body;
-    const user = await User.findOne({ mobile });   // ✅ direct match
+    const user = await User.findOne({ mobile }); 
 
     if (!user) return res.status(404).json({ message: "User not found with this number" });
 
@@ -105,7 +105,6 @@ export const verifyResetOtp = async (req, res) => {
   }
 };
 
-// -------------------- LOGIN --------------------
 export const loginUser = async (req, res) => {
   try {
     const { mobile, password } = req.body;
@@ -113,7 +112,7 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Mobile and password required" });
     }
 
-    const user = await User.findOne({ mobile });   // ✅ direct match
+    const user = await User.findOne({ mobile }); // ✅ direct match
     if (!user) return res.status(404).json({ message: "User not found. Please register." });
 
     const isPassMatch = await bcrypt.compare(password, user.password);
@@ -126,6 +125,8 @@ export const loginUser = async (req, res) => {
       token,
       role: user.role,
       name: user.name,
+      mobile: user.mobile,   // ✅ added
+      id: user._id           // ✅ optional but useful
     });
   } catch (error) {
     res.status(500).json({ message: "Error logging in", error: error.message });

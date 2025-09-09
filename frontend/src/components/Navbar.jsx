@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import RegisterCanteen from "../pages/RegisterCanteen";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -36,37 +35,6 @@ export default function Navbar() {
           <Link to="/" className="hover:text-yellow-200 transition-colors">
             Home
           </Link>
-
-          {/* Contact Us Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowContactMenu(!showContactMenu)}
-              className="hover:text-yellow-200 transition-colors"
-            >
-              Contact Us ▾
-            </button>
-
-            {showContactMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded-lg shadow-lg">
-                <button
-                  onClick={() => {
-                    navigate("/register-canteen");
-                    setShowContactMenu(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                >
-                  Register Your Canteen
-                </button>
-
-                <Link
-                  to="/concern"
-                  className="block px-4 py-2 hover:bg-gray-100"
-                >
-                  Raise a Concern
-                </Link>
-              </div>
-            )}
-          </div>
 
           {!isLoggedIn ? (
             <>
