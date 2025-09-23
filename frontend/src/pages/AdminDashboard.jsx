@@ -51,7 +51,7 @@ const handleAddAdmin = async (canteenId) => {
 
     alert("Admin added successfully");
 
-    // ✅ If the added admin is the logged-in user → refresh token
+    // If the added admin is the logged-in user → refresh token
     if (adminData.mobile === localStorage.getItem("mobile")) {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);

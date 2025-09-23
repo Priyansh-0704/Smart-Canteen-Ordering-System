@@ -112,7 +112,7 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Mobile and password required" });
     }
 
-    const user = await User.findOne({ mobile }); // ✅ direct match
+    const user = await User.findOne({ mobile });
     if (!user) return res.status(404).json({ message: "User not found. Please register." });
 
     const isPassMatch = await bcrypt.compare(password, user.password);
@@ -125,8 +125,8 @@ export const loginUser = async (req, res) => {
       token,
       role: user.role,
       name: user.name,
-      mobile: user.mobile,   // ✅ added
-      id: user._id           // ✅ optional but useful
+      mobile: user.mobile,
+      id: user._id
     });
   } catch (error) {
     res.status(500).json({ message: "Error logging in", error: error.message });
