@@ -143,3 +143,34 @@ export const adminRemoveCanteenAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+export const adminRemoveCanteen = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Remove canteen admins references first
+    const canteen = await Canteen.findById(id);
+    if (!canteen) return res.status(404).json({ message: "Canteen not found" });
+
+    await User.updateMany(
+      { _id: { $in: canteen.admins } },
+      { $pull: { canteens: canteen._id } }
+    );
+
+    const admins = await User.find({ _id: { $in: canteen.admins } });
+    for (let admin of admins) {
+      if (!admin.canteens.length) {
+        admin.role = "User";
+        await admin.save();
+      }
+    }
+
+    // Use findByIdAndDelete instead of remove()
+    const deletedCanteen = await Canteen.findByIdAndDelete(id);
+
+    res.json({ message: "Canteen removed successfully", canteenId: id, deletedCanteen });
+  } catch (err) {
+    console.error("❌ Error in adminRemoveCanteen:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
