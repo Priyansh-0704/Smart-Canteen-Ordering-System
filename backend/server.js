@@ -8,6 +8,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import canteenRoutes from "./routes/canteen.routes.js";
 import menuRoutes from "./routes/menu.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
+import cartRoutes from "./routes/cart.routes.js";
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5173"], // ✅ allow both
+  origin: ["http://localhost:3000", "http://localhost:5173"],
   credentials: true,
 }));
 
@@ -34,6 +35,7 @@ app.use("/api/v3/admin", adminRoutes);
 app.use("/api/v3/canteens", canteenRoutes);
 app.use("/api/v4/canteen-menu", menuRoutes);
 app.use("/api/v5/customer", customerRoutes);
+app.use("/api/v6/cart", cartRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {

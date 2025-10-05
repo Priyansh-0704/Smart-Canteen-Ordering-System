@@ -9,6 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CanteenDashboard from "./pages/CanteenDashboard";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import CanteenMenu from "./pages/CanteenMenu";
+import CartPage from "./pages/CartPage";
 
 function App() {
   return (
@@ -23,7 +24,8 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/canteen-dashboard" element={<CanteenDashboard />} />
         <Route path="/customer-dashboard" element={<CustomerDashboard />} />
-       <Route path="/canteen/:canteenId" element={<CanteenMenu />} />
+        <Route path="/canteen/:canteenId" element={<CanteenMenu />} />
+        <Route path="/cart" element={<CartPage />} />
 
       </Routes>
     </BrowserRouter>

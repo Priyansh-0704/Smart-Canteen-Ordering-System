@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Search } from "lucide-react";
+import CartBar from "../components/CartBar";
 
 export default function CanteenMenu() {
   const { canteenId } = useParams();
   const [canteen, setCanteen] = useState(null);
   const [menu, setMenu] = useState([]);
-  const [search, setSearch] = useState(""); 
+  const [search, setSearch] = useState("");
+  const [refresh, setRefresh] = useState(0);
   const navigate = useNavigate();
 
-  // Fetch menu and canteen info once
   const fetchMenu = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -36,7 +37,29 @@ export default function CanteenMenu() {
     fetchMenu();
   }, [canteenId]);
 
-  const filteredMenu = menu.filter(item =>
+  const handleAddToCart = async (item) => {
+    const token = localStorage.getItem("token");
+    if (!token) return navigate("/signin");
+
+    try {
+      await axios.post(
+        "http://localhost:1230/api/v6/cart/add",
+        {
+          itemId: item._id,
+          name: item.name,
+          price: item.price,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setRefresh((prev) => prev + 1);
+    } catch (err) {
+      console.error("Add to Cart Error:", err.response?.data || err.message);
+    }
+  };
+
+  const filteredMenu = menu.filter((item) =>
     item.name.toLowerCase().startsWith(search.toLowerCase())
   );
 
@@ -54,12 +77,14 @@ export default function CanteenMenu() {
 
       {canteen && (
         <div className="mb-6 text-center">
-          <h1 className="text-4xl font-extrabold text-orange-950 drop-shadow-lg">{canteen.name}</h1>
+          <h1 className="text-4xl font-extrabold text-orange-950 drop-shadow-lg">
+            {canteen.name}
+          </h1>
           <p className="text-lg text-orange-950">{canteen.location}</p>
         </div>
       )}
 
-      {/* 🔍 Food Search */}
+      {/* Search */}
       <div className="max-w-xl mx-auto mb-10 relative">
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-600 w-5 h-5" />
         <input
@@ -91,14 +116,14 @@ export default function CanteenMenu() {
                 </div>
               )}
               <h3 className="text-xl font-bold text-amber-900">{item.name}</h3>
-              <p className="text-gray-800 font-medium">₹{item.price}</p>
-              <p
-                className={`mt-1 font-semibold ${
-                  item.isAvailable ? "text-green-600" : "text-red-600"
-                }`}
+              <p className="text-gray-800 font-medium mb-2">₹{item.price}</p>
+
+              <button
+                onClick={() => handleAddToCart(item)}
+                className="mt-auto bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-amber-700 transition"
               >
-                {item.isAvailable ? "Available" : "Unavailable"}
-              </p>
+                Add to Cart
+              </button>
             </div>
           ))
         ) : (
@@ -107,6 +132,9 @@ export default function CanteenMenu() {
           </p>
         )}
       </div>
+
+      {/* 🛒 Floating Cart Bar */}
+      <CartBar refresh={refresh} />
     </div>
   );
 }
