@@ -8,44 +8,35 @@ import Menu from "../models/Menu.models.js";
  */
 export const getAllCanteens = async (req, res) => {
   try {
-    let { q, open, page = 1, limit = 50 } = req.query;
-    page = Math.max(1, parseInt(page, 10) || 1);
-    limit = Math.min(200, Math.max(1, parseInt(limit, 10) || 50)); // cap limit
-
-    const skip = (page - 1) * limit;
-    const baseFilter = {};
-
-    if (open === "true") baseFilter.isOpen = true;
-    if (open === "false") baseFilter.isOpen = false;
-
-    // Use text search when possible (requires text index)
-    const filter = { ...baseFilter };
-    if (q && q.trim().length) {
-      // prefer text search
-      filter.$text = { $search: q.trim() };
-    }
-
-    const [canteens, total] = await Promise.all([
-      Canteen.find(filter)
-        .select("name location photos isOpen")
-        .populate("admins", "name")
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Canteen.countDocuments(filter),
-    ]);
-
-    res.json({
-      canteens,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+    const searchQuery = req.query.q || "";
+    const canteens = await Canteen.find({
+      name: { $regex: searchQuery, $options: "i" },
     });
+
+    // Fetch random menu photo for each canteen
+    const canteensWithImages = await Promise.all(
+      canteens.map(async (canteen) => {
+        const menuItems = await Menu.find(
+          { canteen: canteen._id, photo: { $exists: true, $ne: null } },
+          "photo"
+        );
+
+        let randomPhoto = null;
+        if (menuItems.length > 0) {
+          const randomIndex = Math.floor(Math.random() * menuItems.length);
+          randomPhoto = menuItems[randomIndex].photo;
+        }
+
+        return {
+          ...canteen.toObject(),
+          previewImage: randomPhoto,
+        };
+      })
+    );
+
+    res.json({ canteens: canteensWithImages });
   } catch (err) {
-    console.error("GET CANTEENS ERROR:", err);
+    console.error("Error fetching canteens:", err);
     res.status(500).json({ message: err.message });
   }
 };

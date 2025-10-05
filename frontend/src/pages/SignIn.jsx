@@ -27,7 +27,7 @@ const handleLogin = async () => {
     } else if (res.data.role === "Admin") {
       navigate("/admin-dashboard");
     } else {
-      navigate("/");
+      navigate("/customer-dashboard");
     }
   } catch (err) {
     console.error(err.response?.data);

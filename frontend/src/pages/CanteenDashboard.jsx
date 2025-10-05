@@ -17,18 +17,15 @@ function CanteenDashboard() {
       .catch((err) => console.error(err));
   }, []);
 
-  // Fetch menu
+  // Fetch menu for first canteen
   useEffect(() => {
     if (canteens.length > 0) {
       axios
         .get(
           `http://localhost:1230/api/v4/canteen-menu/${canteens[0]._id}/menu`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         )
         .then((res) => {
-          // sort items so available on top
           const sorted = [...res.data].sort((a, b) => {
             return (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0);
           });
@@ -70,53 +67,52 @@ function CanteenDashboard() {
     }
   };
 
-const handleToggleAvailability = async (item) => {
-  try {
-    const res = await axios.put(
-      `http://localhost:1230/api/v4/canteen-menu/menu/${item._id}`,
-      { isAvailable: !item.isAvailable },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",   // ✅ force json
-        },
-      }
-    );
+  const handleToggleAvailability = async (item) => {
+    try {
+      const res = await axios.put(
+        `http://localhost:1230/api/v4/canteen-menu/menu/${item._id}`,
+        { isAvailable: !item.isAvailable },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    const updatedItem = res.data.menuItem || res.data;
+      const updatedItem = res.data.menuItem || res.data;
 
-    setMenu(
-      menu
-        .map((m) => (m._id === item._id ? updatedItem : m))
-        .sort((a, b) =>
-          a.isAvailable === b.isAvailable ? 0 : a.isAvailable ? -1 : 1
-        )
-    );
-  } catch (err) {
-    console.error("Toggle Error:", err.response?.data || err.message);
-  }
-};
+      setMenu(
+        menu
+          .map((m) => (m._id === item._id ? updatedItem : m))
+          .sort((a, b) =>
+            a.isAvailable === b.isAvailable ? 0 : a.isAvailable ? -1 : 1
+          )
+      );
+    } catch (err) {
+      console.error("Toggle Error:", err.response?.data || err.message);
+    }
+  };
 
-const handleUpdatePrice = async (item, newPrice) => {
-  try {
-    const res = await axios.put(
-      `http://localhost:1230/api/v4/canteen-menu/menu/${item._id}`,
-      { price: newPrice },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",   // ✅ force json
-        },
-      }
-    );
+  const handleUpdatePrice = async (item, newPrice) => {
+    try {
+      const res = await axios.put(
+        `http://localhost:1230/api/v4/canteen-menu/menu/${item._id}`,
+        { price: newPrice },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    const updatedItem = res.data.menuItem || res.data;
-
-    setMenu(menu.map((m) => (m._id === item._id ? updatedItem : m)));
-  } catch (err) {
-    console.error("Price Update Error:", err.response?.data || err.message);
-  }
-};
+      const updatedItem = res.data.menuItem || res.data;
+      setMenu(menu.map((m) => (m._id === item._id ? updatedItem : m)));
+    } catch (err) {
+      console.error("Price Update Error:", err.response?.data || err.message);
+    }
+  };
 
   const handleDeleteMenu = async (itemId) => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
@@ -154,33 +150,110 @@ const handleUpdatePrice = async (item, newPrice) => {
     }
   };
 
+  const handleUpdateTimes = async () => {
+    if (!canteens[0]) return;
+    try {
+      await axios.put(
+        `http://localhost:1230/api/v3/canteens/${canteens[0]._id}/update-times`,
+        {
+          openingTime: canteens[0].openingTime,
+          closingTime: canteens[0].closingTime,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("Canteen times updated!");
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+    }
+  };
+
+  // ----------------- Helpers -----------------
+  const isCanteenOpenNow = (canteen) => {
+    if (!canteen?.openingTime || !canteen?.closingTime) return canteen?.isOpen;
+    const now = new Date();
+    const [openH, openM] = canteen.openingTime.split(":").map(Number);
+    const [closeH, closeM] = canteen.closingTime.split(":").map(Number);
+
+    const openDate = new Date();
+    openDate.setHours(openH, openM, 0);
+
+    const closeDate = new Date();
+    closeDate.setHours(closeH, closeM, 0);
+
+    return now >= openDate && now <= closeDate && canteen.isOpen;
+  };
+
   // ----------------- UI -----------------
   return (
     <div
       className={`p-8 pt-24 min-h-screen transition-colors duration-500 ${
-        canteens[0]?.isOpen ? "bg-gray-50" : "bg-red-300"
+        isCanteenOpenNow(canteens[0]) ? "bg-gray-50" : "bg-red-200"
       }`}
     >
       {canteens[0] && (
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-extrabold">
-            {canteens[0].name} Dashboard
-          </h1>
-          <button
-            onClick={handleToggleCanteenStatus}
-            className={`px-4 py-2 rounded-lg font-semibold shadow-md ${
-              canteens[0].isOpen
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-green-600 text-white hover:bg-green-700"
-            }`}
-          >
-            {canteens[0].isOpen ? "Close Canteen" : "Open Canteen"}
-          </button>
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <h1 className="text-3xl font-extrabold">{canteens[0].name} Dashboard</h1>
+          <div className="flex gap-2 items-center">
+            <p
+              className={`font-bold ${
+                isCanteenOpenNow(canteens[0]) ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {isCanteenOpenNow(canteens[0]) ? "Open Now" : "Closed"}
+            </p>
+            <button
+              onClick={handleToggleCanteenStatus}
+              className={`px-4 py-2 rounded-lg font-semibold shadow-md ${
+                canteens[0].isOpen
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-green-600 text-white hover:bg-green-700"
+              }`}
+            >
+              {canteens[0].isOpen ? "Close Canteen" : "Open Canteen"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Canteen Timings */}
+      {canteens[0] && (
+        <div className="mt-6 bg-white p-6 rounded-2xl shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Canteen Timings</h2>
+          <div className="flex gap-4 flex-col sm:flex-row items-center">
+            <div>
+              <label className="block mb-1 font-medium">Opening Time</label>
+              <input
+                type="time"
+                value={canteens[0].openingTime || ""}
+                onChange={(e) =>
+                  setCanteens([{ ...canteens[0], openingTime: e.target.value }])
+                }
+                className="border rounded-xl p-2"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 font-medium">Closing Time</label>
+              <input
+                type="time"
+                value={canteens[0].closingTime || ""}
+                onChange={(e) =>
+                  setCanteens([{ ...canteens[0], closingTime: e.target.value }])
+                }
+                className="border rounded-xl p-2"
+              />
+            </div>
+            <button
+              onClick={handleUpdateTimes}
+              className="bg-blue-600 text-white px-4 py-2 rounded-xl"
+            >
+              Save Timings
+            </button>
+          </div>
         </div>
       )}
 
       {/* Menu */}
-      <h2 className="text-2xl font-semibold mb-4">Menu Items</h2>
+      <h2 className="text-2xl font-semibold mt-8 mb-4">Menu Items</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {menu.map((m) => (
           <div

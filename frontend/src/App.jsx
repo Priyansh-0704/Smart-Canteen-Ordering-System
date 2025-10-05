@@ -23,7 +23,8 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/canteen-dashboard" element={<CanteenDashboard />} />
         <Route path="/customer-dashboard" element={<CustomerDashboard />} />
-        <Route path="/canteen/:canteenId" element={<CanteenMenu />} />
+       <Route path="/canteen/:canteenId" element={<CanteenMenu />} />
+
       </Routes>
     </BrowserRouter>
   );

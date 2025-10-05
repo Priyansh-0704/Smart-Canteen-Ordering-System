@@ -24,3 +24,19 @@ export const toggleCanteenStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// update opening/closing times
+export const updateCanteenTimes = async (req, res) => {
+  try {
+    const { openingTime, closingTime } = req.body;
+    const canteen = await Canteen.findOne({ _id: req.params.id, admins: req.user.id });
+    if (!canteen) return res.status(404).json({ message: "Canteen not found or access denied" });
+
+    if (openingTime) canteen.openingTime = openingTime;
+    if (closingTime) canteen.closingTime = closingTime;
+
+    await canteen.save();
+    res.json({ message: "Canteen times updated", canteen });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
