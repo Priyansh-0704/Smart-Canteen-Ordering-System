@@ -258,16 +258,20 @@ function CanteenDashboard() {
         {menu.map((m) => (
           <div
             key={m._id}
-            className={`p-4 rounded-2xl shadow-md flex flex-col transition ${
+            className={`p-4 rounded-2xl shadow-md flex flex-col items-center transition ${
               m.isAvailable ? "bg-white" : "bg-gray-200 opacity-60"
             }`}
           >
-            {m.photo && (
+            {m.photo ? (
               <img
                 src={m.photo}
                 alt={m.name}
-                className="w-full h-40 object-cover rounded-lg mb-3"
+                className="w-[300px] h-[300px] object-cover rounded-lg mb-3"
               />
+            ) : (
+              <div className="w-[300px] h-[300px] bg-gray-200 flex items-center justify-center rounded-lg mb-3 text-gray-500">
+                No Image
+              </div>
             )}
             <h3 className="text-lg font-bold">{m.name}</h3>
 

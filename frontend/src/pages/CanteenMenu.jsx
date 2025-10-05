@@ -17,12 +17,12 @@ export default function CanteenMenu() {
       const res = await axios.get(
         `http://localhost:1230/api/v5/customer/canteens/${canteenId}/menu`,
         {
-          params: { onlyAvailable: true }, // fetch all available items for this canteen
+          params: { onlyAvailable: true },
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
       setCanteen(res.data.canteen);
-      setMenu(res.data.menu); // store full menu of this canteen
+      setMenu(res.data.menu);
     } catch (err) {
       console.error("Menu Fetch Error:", err.response?.data || err.message);
       if (err.response?.status === 401) {
@@ -36,7 +36,6 @@ export default function CanteenMenu() {
     fetchMenu();
   }, [canteenId]);
 
-  // Filter only items that start with search term (case-insensitive)
   const filteredMenu = menu.filter(item =>
     item.name.toLowerCase().startsWith(search.toLowerCase())
   );
@@ -78,16 +77,16 @@ export default function CanteenMenu() {
           filteredMenu.map((item) => (
             <div
               key={item._id}
-              className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl hover:shadow-2xl transform transition hover:scale-105 p-4"
+              className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl hover:shadow-2xl transform transition hover:scale-105 p-4 flex flex-col items-center"
             >
               {item.photo ? (
                 <img
                   src={item.photo}
                   alt={item.name}
-                  className="w-full h-52 object-cover rounded-2xl mb-4"
+                  className="w-[400px] h-[400px] object-cover rounded-2xl mb-4"
                 />
               ) : (
-                <div className="w-full h-52 bg-gray-200 flex items-center justify-center rounded-2xl text-gray-500">
+                <div className="w-[300px] h-[300px] bg-gray-200 flex items-center justify-center rounded-2xl text-gray-500 mb-4">
                   No Image
                 </div>
               )}
