@@ -4,10 +4,12 @@ import axios from "axios";
 function CanteenDashboard() {
   const [canteens, setCanteens] = useState([]);
   const [menu, setMenu] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [newItem, setNewItem] = useState({ name: "", price: "", image: null });
+  const [activeTab, setActiveTab] = useState("menu"); // "menu" or "orders"
   const token = localStorage.getItem("token");
 
-  // Fetch admin's canteens
+  // ----------------- Fetch canteens -----------------
   useEffect(() => {
     axios
       .get("http://localhost:1230/api/v3/canteens/my", {
@@ -17,53 +19,50 @@ function CanteenDashboard() {
       .catch((err) => console.error(err));
   }, []);
 
-  // Fetch menu for first canteen
+  // ----------------- Fetch menu -----------------
   useEffect(() => {
-    if (canteens.length > 0) {
-      axios
-        .get(
-          `http://localhost:1230/api/v4/canteen-menu/${canteens[0]._id}/menu`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
-        .then((res) => {
-          const sorted = [...res.data].sort((a, b) => {
-            return (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0);
-          });
-          setMenu(sorted);
-        })
-        .catch((err) => console.error(err));
-    }
+    if (!canteens[0]?._id) return;
+    axios
+      .get(`http://localhost:1230/api/v4/canteen-menu/${canteens[0]._id}/menu`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const sorted = [...res.data].sort((a, b) => (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0));
+        setMenu(sorted);
+      })
+      .catch((err) => console.error(err));
   }, [canteens]);
 
-  // ----------------- Handlers -----------------
-  const handleAddMenu = async () => {
-    if (!canteens[0]) return alert("No canteen found for this admin");
+  // ----------------- Fetch orders -----------------
+  useEffect(() => {
+    if (!canteens[0]?._id) return;
+    axios
+      .get(`http://localhost:1230/api/v8/order/canteen/${canteens[0]._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setOrders(res.data || [])) // fixed: use res.data directly
+      .catch((err) => console.error(err));
+  }, [canteens]);
 
+  // ----------------- Menu Handlers -----------------
+  const handleAddMenu = async () => {
+    if (!canteens[0]?._id) return alert("No canteen found");
     try {
       const formData = new FormData();
       formData.append("name", newItem.name);
-      formData.append("price", newItem.price);
+      formData.append("price", parseFloat(newItem.price));
       if (newItem.image) formData.append("photo", newItem.image);
 
       const res = await axios.post(
         `http://localhost:1230/api/v4/canteen-menu/${canteens[0]._id}/menu`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
       );
 
-      setMenu(
-        [...menu, res.data.menuItem].sort(
-          (a, b) => (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0)
-        )
-      );
+      setMenu((prev) => [res.data.menuItem, ...prev]); // Add on top
       setNewItem({ name: "", price: "", image: null });
     } catch (err) {
-      console.error("Add Menu Error:", err.response?.data || err.message);
+      console.error(err.response?.data || err.message);
     }
   };
 
@@ -72,69 +71,44 @@ function CanteenDashboard() {
       const res = await axios.put(
         `http://localhost:1230/api/v4/canteen-menu/menu/${item._id}`,
         { isAvailable: !item.isAvailable },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       const updatedItem = res.data.menuItem || res.data;
-
-      setMenu(
-        menu
-          .map((m) => (m._id === item._id ? updatedItem : m))
-          .sort((a, b) =>
-            a.isAvailable === b.isAvailable ? 0 : a.isAvailable ? -1 : 1
-          )
-      );
+      setMenu((prev) => prev.map((m) => (m._id === item._id ? updatedItem : m)));
     } catch (err) {
-      console.error("Toggle Error:", err.response?.data || err.message);
+      console.error(err.response?.data || err.message);
     }
   };
 
-  const handleUpdatePrice = async (item, newPrice) => {
+  const handleUpdatePrice = async (item, price) => {
     try {
       const res = await axios.put(
         `http://localhost:1230/api/v4/canteen-menu/menu/${item._id}`,
-        { price: newPrice },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const updatedItem = res.data.menuItem || res.data;
-      setMenu(menu.map((m) => (m._id === item._id ? updatedItem : m)));
-    } catch (err) {
-      console.error("Price Update Error:", err.response?.data || err.message);
-    }
-  };
-
-  const handleDeleteMenu = async (itemId) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
-
-    try {
-      await axios.delete(
-        `http://localhost:1230/api/v4/canteen-menu/menu/${itemId}`,
+        { price },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMenu(
-        menu
-          .filter((m) => m._id !== itemId)
-          .sort((a, b) => (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0))
-      );
+      const updatedItem = res.data.menuItem || res.data;
+      setMenu((prev) => prev.map((m) => (m._id === item._id ? updatedItem : m)));
     } catch (err) {
-      console.error("Delete Error:", err.response?.data || err.message);
+      console.error(err.response?.data || err.message);
     }
   };
 
-  const handleToggleCanteenStatus = async () => {
-    if (!canteens[0]) return;
+  const handleDeleteMenu = async (id) => {
+    if (!window.confirm("Delete this menu item?")) return;
+    try {
+      await axios.delete(`http://localhost:1230/api/v4/canteen-menu/menu/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMenu((prev) => prev.filter((m) => m._id !== id));
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+    }
+  };
 
+  // ----------------- Canteen Handlers -----------------
+  const handleToggleCanteenStatus = async () => {
+    if (!canteens[0]?._id) return;
     try {
       const res = await axios.put(
         `http://localhost:1230/api/v3/canteens/${canteens[0]._id}/toggle-status`,
@@ -143,209 +117,139 @@ function CanteenDashboard() {
       );
       setCanteens([res.data.canteen]);
     } catch (err) {
-      console.error(
-        "Toggle Canteen Status Error:",
-        err.response?.data || err.message
-      );
+      console.error(err.response?.data || err.message);
     }
   };
 
   const handleUpdateTimes = async () => {
-    if (!canteens[0]) return;
+    if (!canteens[0]?._id) return;
     try {
       await axios.put(
         `http://localhost:1230/api/v3/canteens/${canteens[0]._id}/update-times`,
-        {
-          openingTime: canteens[0].openingTime,
-          closingTime: canteens[0].closingTime,
-        },
+        { openingTime: canteens[0].openingTime, closingTime: canteens[0].closingTime },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("Canteen times updated!");
+      alert("Canteen timings updated!");
     } catch (err) {
       console.error(err.response?.data || err.message);
     }
   };
 
-  // ----------------- Helpers -----------------
   const isCanteenOpenNow = (canteen) => {
-    if (!canteen?.openingTime || !canteen?.closingTime) return canteen?.isOpen;
+    if (!canteen) return false;
     const now = new Date();
-    const [openH, openM] = canteen.openingTime.split(":").map(Number);
-    const [closeH, closeM] = canteen.closingTime.split(":").map(Number);
-
-    const openDate = new Date();
-    openDate.setHours(openH, openM, 0);
-
-    const closeDate = new Date();
-    closeDate.setHours(closeH, closeM, 0);
-
-    return now >= openDate && now <= closeDate && canteen.isOpen;
+    const [h1, m1] = (canteen.openingTime || "00:00").split(":").map(Number);
+    const [h2, m2] = (canteen.closingTime || "23:59").split(":").map(Number);
+    const open = new Date(); open.setHours(h1, m1, 0);
+    const close = new Date(); close.setHours(h2, m2, 0);
+    return canteen.isOpen && now >= open && now <= close;
   };
 
   // ----------------- UI -----------------
   return (
-    <div
-      className={`p-8 pt-24 min-h-screen transition-colors duration-500 ${
-        isCanteenOpenNow(canteens[0]) ? "bg-gray-50" : "bg-red-200"
-      }`}
-    >
+    <div className={`p-8 pt-24 min-h-screen ${isCanteenOpenNow(canteens[0]) ? "bg-gray-50" : "bg-red-200"}`}>
+      {/* Canteen Info */}
       {canteens[0] && (
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-extrabold">{canteens[0].name} Dashboard</h1>
-          <div className="flex gap-2 items-center">
-            <p
-              className={`font-bold ${
-                isCanteenOpenNow(canteens[0]) ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {isCanteenOpenNow(canteens[0]) ? "Open Now" : "Closed"}
-            </p>
-            <button
-              onClick={handleToggleCanteenStatus}
-              className={`px-4 py-2 rounded-lg font-semibold shadow-md ${
-                canteens[0].isOpen
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-green-600 text-white hover:bg-green-700"
-              }`}
-            >
-              {canteens[0].isOpen ? "Close Canteen" : "Open Canteen"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Canteen Timings */}
-      {canteens[0] && (
-        <div className="mt-6 bg-white p-6 rounded-2xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Canteen Timings</h2>
-          <div className="flex gap-4 flex-col sm:flex-row items-center">
-            <div>
-              <label className="block mb-1 font-medium">Opening Time</label>
-              <input
-                type="time"
-                value={canteens[0].openingTime || ""}
-                onChange={(e) =>
-                  setCanteens([{ ...canteens[0], openingTime: e.target.value }])
-                }
-                className="border rounded-xl p-2"
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium">Closing Time</label>
-              <input
-                type="time"
-                value={canteens[0].closingTime || ""}
-                onChange={(e) =>
-                  setCanteens([{ ...canteens[0], closingTime: e.target.value }])
-                }
-                className="border rounded-xl p-2"
-              />
-            </div>
-            <button
-              onClick={handleUpdateTimes}
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl"
-            >
-              Save Timings
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Menu */}
-      <h2 className="text-2xl font-semibold mt-8 mb-4">Menu Items</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {menu.map((m) => (
-          <div
-            key={m._id}
-            className={`p-4 rounded-2xl shadow-md flex flex-col items-center transition ${
-              m.isAvailable ? "bg-white" : "bg-gray-200 opacity-60"
-            }`}
-          >
-            {m.photo ? (
-              <img
-                src={m.photo}
-                alt={m.name}
-                className="w-[300px] h-[300px] object-cover rounded-lg mb-3"
-              />
-            ) : (
-              <div className="w-[300px] h-[300px] bg-gray-200 flex items-center justify-center rounded-lg mb-3 text-gray-500">
-                No Image
-              </div>
-            )}
-            <h3 className="text-lg font-bold">{m.name}</h3>
-
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                type="number"
-                value={m.price}
-                onChange={(e) =>
-                  handleUpdatePrice(m, parseFloat(e.target.value))
-                }
-                className="border rounded-lg p-2 w-24"
-              />
-              <span>₹</span>
-            </div>
-
-            <div className="mt-2 flex items-center gap-3">
-              <span
-                className={
-                  m.isAvailable
-                    ? "text-green-600 font-semibold"
-                    : "text-red-600 font-semibold"
-                }
-              >
-                {m.isAvailable ? "Available" : "Unavailable"}
-              </span>
-              <button
-                onClick={() => handleToggleAvailability(m)}
-                className="px-3 py-1 bg-yellow-500 text-white rounded-lg"
-              >
-                Toggle
-              </button>
-            </div>
-
-            <button
-              onClick={() => handleDeleteMenu(m._id)}
-              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg"
-            >
-              ❌ Remove
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Add Menu Form */}
-      <div className="bg-white p-6 rounded-2xl shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Add Menu Item</h2>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <input
-            placeholder="Food Name"
-            value={newItem.name}
-            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-            className="border rounded-xl p-3 flex-1"
-          />
-          <input
-            placeholder="Price"
-            value={newItem.price}
-            onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-            className="border rounded-xl p-3 flex-1"
-          />
-          <input
-            type="file"
-            onChange={(e) =>
-              setNewItem({ ...newItem, image: e.target.files[0] })
-            }
-            className="border p-2 flex-1"
-          />
           <button
-            onClick={handleAddMenu}
-            className="bg-green-600 text-white px-6 py-3 rounded-xl"
+            onClick={handleToggleCanteenStatus}
+            className={`px-4 py-2 rounded-lg text-white ${canteens[0].isOpen ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
           >
-            Add
+            {canteens[0].isOpen ? "Close Canteen" : "Open Canteen"}
           </button>
         </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-4 mb-6">
+        <button
+          className={`px-4 py-2 rounded-lg ${activeTab === "menu" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+          onClick={() => setActiveTab("menu")}
+        >
+          Menu
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg ${activeTab === "orders" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+          onClick={() => setActiveTab("orders")}
+        >
+          Orders
+        </button>
       </div>
+
+      {/* ----------------- Menu Tab ----------------- */}
+      {activeTab === "menu" && (
+        <>
+          {/* Add Menu */}
+          <div className="bg-white p-6 rounded-2xl shadow-md mb-8">
+            <h2 className="text-xl font-semibold mb-4">Add Menu Item</h2>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <input placeholder="Name" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} className="border p-3 rounded-xl flex-1" />
+              <input placeholder="Price" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} className="border p-3 rounded-xl flex-1" />
+              <input type="file" onChange={(e) => setNewItem({ ...newItem, image: e.target.files[0] })} className="border p-2 flex-1" />
+              <button onClick={handleAddMenu} className="bg-green-600 text-white px-6 py-3 rounded-xl">Add</button>
+            </div>
+          </div>
+
+          {/* Menu Items */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {menu.map((m) => (
+              <div key={m._id} className={`p-4 rounded-2xl shadow-md flex flex-col items-center ${m.isAvailable ? "bg-white" : "bg-gray-200 opacity-70"}`}>
+                {m.photo ? <img src={m.photo} alt={m.name} className="w-[300px] h-[300px] object-cover rounded-lg mb-3" /> : <div className="w-[300px] h-[300px] bg-gray-200 flex items-center justify-center rounded-lg mb-3">No Image</div>}
+                <h3 className="text-lg font-bold">{m.name}</h3>
+                <div className="flex items-center gap-2 mt-2">
+                  <input type="number" value={m.price} onChange={(e) => handleUpdatePrice(m, parseFloat(e.target.value))} className="border rounded-lg p-2 w-24" />
+                  <span>₹</span>
+                </div>
+                <div className="mt-2 flex gap-2 items-center">
+                  <span className={m.isAvailable ? "text-green-600" : "text-red-600"}>{m.isAvailable ? "Available" : "Unavailable"}</span>
+                  <button onClick={() => handleToggleAvailability(m)} className="px-3 py-1 bg-yellow-500 text-white rounded-lg">Toggle</button>
+                </div>
+                <button onClick={() => handleDeleteMenu(m._id)} className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg">❌ Remove</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ----------------- Orders Tab ----------------- */}
+      {activeTab === "orders" && (
+        <div className="bg-white p-6 rounded-2xl shadow-md">
+          {orders.length === 0 ? (
+            <p>No orders yet.</p>
+          ) : (
+            orders.map((order) => (
+              <div key={order._id} className="border p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+                <div>
+                  <p><strong>Order ID:</strong> {order.orderId}</p>
+                  <p><strong>Customer:</strong> {order.user?.name || order.user?.email}</p>
+                  <p><strong>Total:</strong> ₹{order.amount}</p>
+                  <p><strong>Status:</strong> {order.status}</p>
+                </div>
+                {order.status !== "Completed" && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await axios.put(
+                          `http://localhost:1230/api/v8/order/${order._id}/status`,
+                          { status: "Completed" },
+                          { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        setOrders((prev) => prev.map((o) => (o._id === order._id ? { ...o, status: "Completed" } : o)));
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="bg-green-600 text-white px-4 py-2 rounded-xl"
+                  >
+                    Mark Completed
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

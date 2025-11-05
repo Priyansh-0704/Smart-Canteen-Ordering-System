@@ -2,10 +2,7 @@ import mongoose from "mongoose";
 import Canteen from "../models/Canteen.models.js";
 import Menu from "../models/Menu.models.js";
 
-/**
- * GET /api/v5/customer/canteens
- * Query: q, open (true|false), page, limit
- */
+
 export const getAllCanteens = async (req, res) => {
   try {
     const searchQuery = req.query.q || "";

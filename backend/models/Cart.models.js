@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const cartSchema = new mongoose.Schema(
   {
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    canteen: { type: mongoose.Schema.Types.ObjectId, ref: "Canteen" }, 
     items: [
       {
         itemId: { type: mongoose.Schema.Types.ObjectId, ref: "Menu", required: true },

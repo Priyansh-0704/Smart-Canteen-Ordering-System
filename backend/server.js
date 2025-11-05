@@ -9,6 +9,9 @@ import canteenRoutes from "./routes/canteen.routes.js";
 import menuRoutes from "./routes/menu.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import orderRoutes from "./routes/order.routes.js"
+
 
 dotenv.config();
 
@@ -36,6 +39,9 @@ app.use("/api/v3/canteens", canteenRoutes);
 app.use("/api/v4/canteen-menu", menuRoutes);
 app.use("/api/v5/customer", customerRoutes);
 app.use("/api/v6/cart", cartRoutes);
+app.use("/api/v7/payment", paymentRoutes);
+app.use("/api/v8/order",orderRoutes)
+
 
 // Handle unknown routes
 app.use((req, res) => {
