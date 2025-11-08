@@ -7,6 +7,7 @@ function CanteenDashboard() {
   const [orders, setOrders] = useState([]);
   const [newItem, setNewItem] = useState({ name: "", price: "", image: null });
   const [activeTab, setActiveTab] = useState("menu"); // "menu" or "orders"
+  const [editTimes, setEditTimes] = useState(false);
   const token = localStorage.getItem("token");
 
   // ----------------- Fetch canteens -----------------
@@ -19,36 +20,48 @@ function CanteenDashboard() {
       .catch((err) => console.error(err));
   }, []);
 
+  // ----------------- Fetch menu helper -----------------
+  const fetchMenu = async () => {
+    if (!canteens[0]?._id) return;
+    try {
+      const res = await axios.get(
+        `http://localhost:1230/api/v4/canteen-menu/${canteens[0]._id}/menu`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const sorted = [...res.data].sort(
+        (a, b) => (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0)
+      );
+      setMenu(sorted);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // ----------------- Fetch menu -----------------
   useEffect(() => {
-    if (!canteens[0]?._id) return;
-    axios
-      .get(`http://localhost:1230/api/v4/canteen-menu/${canteens[0]._id}/menu`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const sorted = [...res.data].sort(
-          (a, b) => (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0)
-        );
-        setMenu(sorted);
-      })
-      .catch((err) => console.error(err));
+    fetchMenu();
   }, [canteens]);
 
   // ----------------- Fetch orders -----------------
-  useEffect(() => {
-    axios
-      .get(`http://localhost:1230/api/v8/order/canteen`, {
+  const fetchOrders = async () => {
+    try {
+      const res = await axios.get(`http://localhost:1230/api/v8/order/canteen`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        if (res.data?.orders) setOrders(res.data.orders);
-        else setOrders([]);
-      })
-      .catch((err) =>
-        console.error("Order fetch error:", err.response?.data || err.message)
-      );
+      });
+      if (res.data?.orders) setOrders(res.data.orders);
+      else setOrders([]);
+    } catch (err) {
+      console.error("Order fetch error:", err.response?.data || err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    // Auto-refresh orders every 10 seconds
+    const interval = setInterval(fetchOrders, 10000);
+    return () => clearInterval(interval);
   }, [canteens]);
+
 
   // ----------------- Menu Handlers -----------------
   const handleAddMenu = async () => {
@@ -59,7 +72,7 @@ function CanteenDashboard() {
       formData.append("price", parseFloat(newItem.price));
       if (newItem.image) formData.append("photo", newItem.image);
 
-      const res = await axios.post(
+      await axios.post(
         `http://localhost:1230/api/v4/canteen-menu/${canteens[0]._id}/menu`,
         formData,
         {
@@ -70,8 +83,8 @@ function CanteenDashboard() {
         }
       );
 
-      setMenu((prev) => [res.data.menuItem, ...prev]);
       setNewItem({ name: "", price: "", image: null });
+      fetchMenu(); // Refresh menu instead of pushing item manually
     } catch (err) {
       console.error(err.response?.data || err.message);
     }
@@ -149,6 +162,7 @@ function CanteenDashboard() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert("Canteen timings updated!");
+      setEditTimes(false);
     } catch (err) {
       console.error(err.response?.data || err.message);
     }
@@ -169,23 +183,92 @@ function CanteenDashboard() {
   // ----------------- UI -----------------
   return (
     <div
-      className={`p-8 pt-24 min-h-screen ${
-        isCanteenOpenNow(canteens[0]) ? "bg-gray-50" : "bg-red-200"
-      }`}
+      className={`p-8 pt-24 min-h-screen ${isCanteenOpenNow(canteens[0]) ? "bg-gray-50" : "bg-red-200"
+        }`}
     >
       {/* Canteen Info */}
       {canteens[0] && (
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-extrabold">
-            {canteens[0].name} Dashboard
-          </h1>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold mb-2">
+              {canteens[0].name} Dashboard
+            </h1>
+
+            <div className="flex items-center gap-4">
+              {editTimes ? (
+                <>
+                  <label className="text-sm">
+                    Opens:
+                    <input
+                      type="time"
+                      value={canteens[0].openingTime}
+                      onChange={(e) =>
+                        setCanteens([
+                          { ...canteens[0], openingTime: e.target.value },
+                        ])
+                      }
+                      className="ml-2 border rounded-lg px-2 py-1"
+                    />
+                  </label>
+                  <label className="text-sm">
+                    Closes:
+                    <input
+                      type="time"
+                      value={canteens[0].closingTime}
+                      onChange={(e) =>
+                        setCanteens([
+                          { ...canteens[0], closingTime: e.target.value },
+                        ])
+                      }
+                      className="ml-2 border rounded-lg px-2 py-1"
+                    />
+                  </label>
+                  <button
+                    onClick={handleUpdateTimes}
+                    className="ml-4 bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-lg"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditTimes(false)}
+                    className="text-gray-600 underline text-sm ml-2"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-700">
+                    🕒 {canteens[0].openingTime} – {canteens[0].closingTime}
+                  </p>
+                  <button
+                    onClick={() => setEditTimes(true)}
+                    className="text-blue-600 underline text-sm"
+                  >
+                    Edit Timings
+                  </button>
+                </>
+              )}
+            </div>
+
+            <p
+              className={`mt-1 font-semibold ${isCanteenOpenNow(canteens[0])
+                ? "text-green-600"
+                : "text-red-600"
+                }`}
+            >
+              {isCanteenOpenNow(canteens[0])
+                ? "Currently Open"
+                : "Currently Closed"}
+            </p>
+          </div>
+
           <button
             onClick={handleToggleCanteenStatus}
-            className={`px-4 py-2 rounded-lg text-white ${
-              canteens[0].isOpen
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
+            className={`px-4 py-2 rounded-lg text-white ${canteens[0].isOpen
+              ? "bg-red-600 hover:bg-red-700"
+              : "bg-green-600 hover:bg-green-700"
+              }`}
           >
             {canteens[0].isOpen ? "Close Canteen" : "Open Canteen"}
           </button>
@@ -195,21 +278,19 @@ function CanteenDashboard() {
       {/* Tabs */}
       <div className="flex gap-4 mb-6">
         <button
-          className={`px-4 py-2 rounded-lg ${
-            activeTab === "menu"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-black"
-          }`}
+          className={`px-4 py-2 rounded-lg ${activeTab === "menu"
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-black"
+            }`}
           onClick={() => setActiveTab("menu")}
         >
           Menu
         </button>
         <button
-          className={`px-4 py-2 rounded-lg ${
-            activeTab === "orders"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-black"
-          }`}
+          className={`px-4 py-2 rounded-lg ${activeTab === "orders"
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-black"
+            }`}
           onClick={() => setActiveTab("orders")}
         >
           Orders
@@ -255,58 +336,68 @@ function CanteenDashboard() {
           </div>
 
           {/* Menu Items */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {menu.map((m) => (
               <div
                 key={m._id}
-                className={`p-4 rounded-2xl shadow-md flex flex-col items-center ${
-                  m.isAvailable ? "bg-white" : "bg-gray-200 opacity-70"
-                }`}
+                className={`group relative flex flex-col items-center text-center rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] ${m.isAvailable
+                  ? "bg-white/95"
+                  : "bg-gray-100/90 opacity-80 grayscale"
+                  }`}
               >
+                {/* Image */}
                 {m.photo ? (
                   <img
                     src={m.photo}
                     alt={m.name}
-                    className="w-[300px] h-[300px] object-cover rounded-lg mb-3"
+                    className="w-full h-64 object-cover rounded-t-2xl transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-[300px] h-[300px] bg-gray-200 flex items-center justify-center rounded-lg mb-3">
+                  <div className="w-full h-64 bg-gray-300 flex items-center justify-center text-gray-600 rounded-t-2xl">
                     No Image
                   </div>
                 )}
-                <h3 className="text-lg font-bold">{m.name}</h3>
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="number"
-                    value={m.price}
-                    onChange={(e) =>
-                      handleUpdatePrice(m, parseFloat(e.target.value))
-                    }
-                    className="border rounded-lg p-2 w-24"
-                  />
-                  <span>₹</span>
-                </div>
-                <div className="mt-2 flex gap-2 items-center">
-                  <span
-                    className={
-                      m.isAvailable ? "text-green-600" : "text-red-600"
-                    }
-                  >
-                    {m.isAvailable ? "Available" : "Unavailable"}
-                  </span>
+
+                {/* Content */}
+                <div className="p-5 w-full flex flex-col items-center">
+                  {/* Item Name */}
+                  <h3 className="text-lg font-semibold text-gray-900 capitalize tracking-wide">
+                    {m.name}
+                  </h3>
+
+                  {/* Price & Availability Row */}
+                  <div className="flex items-center justify-center gap-3 mt-3">
+                    <div className="flex items-center border border-gray-300 rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-blue-400 transition-all">
+                      <input
+                        type="number"
+                        value={m.price}
+                        onChange={(e) =>
+                          handleUpdatePrice(m, parseFloat(e.target.value))
+                        }
+                        className="w-20 text-center outline-none bg-transparent"
+                      />
+                      <span className="font-semibold text-gray-600 ml-1">₹</span>
+                    </div>
+
+                    <button
+                      onClick={() => handleToggleAvailability(m)}
+                      className={`px-4 py-2 font-semibold rounded-lg shadow-sm transition-colors duration-200 ${m.isAvailable
+                        ? "bg-green-500 hover:bg-green-600 text-white"
+                        : "bg-red-500 hover:bg-red-600 text-white"
+                        }`}
+                    >
+                      {m.isAvailable ? "Available" : "Unavailable"}
+                    </button>
+                  </div>
+
+                  {/* Remove Button */}
                   <button
-                    onClick={() => handleToggleAvailability(m)}
-                    className="px-3 py-1 bg-yellow-500 text-white rounded-lg"
+                    onClick={() => handleDeleteMenu(m._id)}
+                    className="mt-5 bg-gray-800 hover:bg-black text-white font-semibold px-6 py-2 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg"
                   >
-                    Toggle
+                    Remove
                   </button>
                 </div>
-                <button
-                  onClick={() => handleDeleteMenu(m._id)}
-                  className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg"
-                >
-                  ❌ Remove
-                </button>
               </div>
             ))}
           </div>
@@ -322,54 +413,193 @@ function CanteenDashboard() {
             orders.map((order) => (
               <div
                 key={order._id}
-                className="border p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2"
+                className="border p-5 rounded-xl flex flex-col gap-3 mb-4 shadow-sm bg-gray-50 hover:bg-gray-100 transition"
               >
-                <div>
-                  <p>
-                    <strong>Order ID:</strong> {order.orderId}
-                  </p>
-                  <p>
-                    <strong>Customer:</strong> {order.user?.name || "Unknown"}
-                  </p>
-                  <p>
-                    <strong>Total:</strong> ₹{order.amount}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {order.status}
-                  </p>
+                {/* Top info */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-semibold text-gray-800">
+                      Order ID: {order.orderId || order._id.slice(-6).toUpperCase()}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Placed on:{" "}
+                      {new Date(order.createdAt).toLocaleString("en-IN", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      Customer: {order.user?.name || "Unknown"}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-end">
+                    <span
+                      className={`text-sm font-semibold px-3 py-1 rounded-lg ${order.status === "Pending"
+                        ? "bg-yellow-200 text-yellow-800"
+                        : order.status === "Preparing"
+                          ? "bg-blue-200 text-blue-800"
+                          : order.status === "Ready"
+                            ? "bg-purple-200 text-purple-800"
+                            : "bg-green-200 text-green-800"
+                        }`}
+                    >
+                      {order.status}
+                    </span>
+                    <span className="text-gray-700 font-semibold mt-1">
+                      ₹{order.amount}
+                    </span>
+                  </div>
                 </div>
-                {order.status !== "Completed" && (
-                  <button
-                    onClick={async () => {
-                      try {
+
+                {/* Items List */}
+                <div className="mt-2 border-t pt-2">
+                  <h4 className="font-semibold text-gray-800 mb-2">Items:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {order.items?.map((it, idx) => (
+                      <li key={idx} className="flex justify-between">
+                        <span>
+                          {it.name || it.itemId?.name} × {it.quantity}
+                        </span>
+                        <span>₹{(it.price || it.itemId?.price) * it.quantity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Buttons */}
+                <div className="mt-3 flex flex-wrap gap-3 justify-end">
+                  {/* Only show "Mark Preparing" if payment is completed */}
+                  {order.status === "Paid" && (
+                    <button
+                      onClick={async () => {
                         await axios.put(
                           `http://localhost:1230/api/v8/order/${order._id}/status`,
-                          { status: "Completed" },
+                          { status: "Preparing" },
                           { headers: { Authorization: `Bearer ${token}` } }
                         );
                         setOrders((prev) =>
                           prev.map((o) =>
-                            o._id === order._id
-                              ? { ...o, status: "Completed" }
-                              : o
+                            o._id === order._id ? { ...o, status: "Preparing" } : o
                           )
                         );
-                      } catch (err) {
-                        console.error(err);
-                      }
-                    }}
-                    className="bg-green-600 text-white px-4 py-2 rounded-xl"
-                  >
-                    Mark Completed
-                  </button>
-                )}
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold"
+                    >
+                      Mark Preparing
+                    </button>
+                  )}
+
+                  {order.status === "Preparing" && (
+                    <>
+                      <button
+                        onClick={async () => {
+                          await axios.put(
+                            `http://localhost:1230/api/v8/order/${order._id}/status`,
+                            { status: "Ready" },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
+                          setOrders((prev) =>
+                            prev.map((o) =>
+                              o._id === order._id ? { ...o, status: "Ready" } : o
+                            )
+                          );
+                        }}
+                        className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold"
+                      >
+                        Mark Ready
+                      </button>
+
+                      {/* Allow revert to Paid */}
+                      <button
+                        onClick={async () => {
+                          await axios.put(
+                            `http://localhost:1230/api/v8/order/${order._id}/status`,
+                            { status: "Paid" },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
+                          setOrders((prev) =>
+                            prev.map((o) =>
+                              o._id === order._id ? { ...o, status: "Paid" } : o
+                            )
+                          );
+                        }}
+                        className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold"
+                      >
+                        Revert to Paid
+                      </button>
+                    </>
+                  )}
+
+                  {order.status === "Ready" && (
+                    <>
+                      <button
+                        onClick={async () => {
+                          await axios.put(
+                            `http://localhost:1230/api/v8/order/${order._id}/status`,
+                            { status: "Completed" },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
+                          setOrders((prev) =>
+                            prev.map((o) =>
+                              o._id === order._id ? { ...o, status: "Completed" } : o
+                            )
+                          );
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold"
+                      >
+                        Mark Completed
+                      </button>
+
+                      {/* Allow revert to Preparing */}
+                      <button
+                        onClick={async () => {
+                          await axios.put(
+                            `http://localhost:1230/api/v8/order/${order._id}/status`,
+                            { status: "Preparing" },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
+                          setOrders((prev) =>
+                            prev.map((o) =>
+                              o._id === order._id ? { ...o, status: "Preparing" } : o
+                            )
+                          );
+                        }}
+                        className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold"
+                      >
+                        Revert to Preparing
+                      </button>
+                    </>
+                  )}
+                  {/* ✅ NEW: Allow revert to Ready after completed */}
+                  {order.status === "Completed" && (
+                    <button
+                      onClick={async () => {
+                        await axios.put(
+                          `http://localhost:1230/api/v8/order/${order._id}/status`,
+                          { status: "Ready" },
+                          { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        setOrders((prev) =>
+                          prev.map((o) =>
+                            o._id === order._id ? { ...o, status: "Ready" } : o
+                          )
+                        );
+                      }}
+                      className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold"
+                    >
+                      Revert to Ready
+                    </button>
+                  )}
+                </div>
+
               </div>
             ))
           )}
         </div>
       )}
+
     </div>
   );
 }
-
 export default CanteenDashboard;
