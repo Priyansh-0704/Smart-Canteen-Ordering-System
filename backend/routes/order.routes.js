@@ -1,4 +1,5 @@
 import express from "express";
+import Order from "../models/Order.models.js";
 import { authMiddleware } from "../middleware/auth.middle.js";
 import {
   getCanteenOrders,
@@ -20,6 +21,32 @@ router.get(
   "/canteen",
   authMiddleware(["CanteenAdmin"]),
   getCanteenOrders
+);
+
+// 🧾 Get all orders for the logged-in customer
+router.get(
+  "/my",
+  authMiddleware(["User", "CanteenAdmin"]),
+  async (req, res) => {
+    try {
+      const orders = await Order.find({ user: req.user._id })
+        .populate("canteen", "name location previewImage")
+        .populate("items.itemId", "name price photo")
+        .sort({ createdAt: -1 });
+
+      res.json({
+        success: true,
+        total: orders.length,
+        orders,
+      });
+    } catch (err) {
+      console.error("getMyOrders error:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch user orders",
+      });
+    }
+  }
 );
 
 // 🧾 Update order status

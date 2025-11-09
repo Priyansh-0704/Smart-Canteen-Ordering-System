@@ -437,11 +437,17 @@ function CanteenDashboard() {
                     <span
                       className={`text-sm font-semibold px-3 py-1 rounded-lg ${order.status === "Pending"
                         ? "bg-yellow-200 text-yellow-800"
-                        : order.status === "Preparing"
-                          ? "bg-blue-200 text-blue-800"
-                          : order.status === "Ready"
-                            ? "bg-purple-200 text-purple-800"
-                            : "bg-green-200 text-green-800"
+                        : order.status === "Paid"
+                          ? "bg-teal-200 text-teal-800"
+                          : order.status === "Preparing"
+                            ? "bg-blue-200 text-blue-800"
+                            : order.status === "Ready"
+                              ? "bg-purple-200 text-purple-800"
+                              : order.status === "Completed"
+                                ? "bg-green-200 text-green-800"
+                                : order.status === "Cancelled"
+                                  ? "bg-red-200 text-red-800"
+                                  : "bg-gray-200 text-gray-800"
                         }`}
                     >
                       {order.status}
@@ -471,25 +477,52 @@ function CanteenDashboard() {
                 <div className="mt-3 flex flex-wrap gap-3 justify-end">
                   {/* Only show "Mark Preparing" if payment is completed */}
                   {order.status === "Paid" && (
-                    <button
-                      onClick={async () => {
-                        await axios.put(
-                          `http://localhost:1230/api/v8/order/${order._id}/status`,
-                          { status: "Preparing" },
-                          { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        setOrders((prev) =>
-                          prev.map((o) =>
-                            o._id === order._id ? { ...o, status: "Preparing" } : o
-                          )
-                        );
-                      }}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold"
-                    >
-                      Mark Preparing
-                    </button>
-                  )}
+                    <>
+                      {/* Mark Preparing */}
+                      <button
+                        onClick={async () => {
+                          await axios.put(
+                            `http://localhost:1230/api/v8/order/${order._id}/status`,
+                            { status: "Preparing" },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
+                          setOrders((prev) =>
+                            prev.map((o) =>
+                              o._id === order._id ? { ...o, status: "Preparing" } : o
+                            )
+                          );
+                        }}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold"
+                      >
+                        Mark Preparing
+                      </button>
 
+                      {/* ❌ Cancel Order */}
+                      <button
+                        onClick={async () => {
+                          const confirmCancel = window.confirm(
+                            "⚠️ Are you sure you want to cancel this order? This action cannot be undone."
+                          );
+                          if (!confirmCancel) return;
+
+                          await axios.put(
+                            `http://localhost:1230/api/v8/order/${order._id}/status`,
+                            { status: "Cancelled" },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
+
+                          setOrders((prev) =>
+                            prev.map((o) =>
+                              o._id === order._id ? { ...o, status: "Cancelled" } : o
+                            )
+                          );
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold"
+                      >
+                        Cancel Order
+                      </button>
+                    </>
+                  )}
                   {order.status === "Preparing" && (
                     <>
                       <button
@@ -533,13 +566,20 @@ function CanteenDashboard() {
 
                   {order.status === "Ready" && (
                     <>
+                      {/* ✅ Mark Completed with confirmation */}
                       <button
                         onClick={async () => {
+                          const confirmComplete = window.confirm(
+                            "✅ Are you sure you want to mark this order as Completed? This action cannot be reverted."
+                          );
+                          if (!confirmComplete) return;
+
                           await axios.put(
                             `http://localhost:1230/api/v8/order/${order._id}/status`,
                             { status: "Completed" },
                             { headers: { Authorization: `Bearer ${token}` } }
                           );
+
                           setOrders((prev) =>
                             prev.map((o) =>
                               o._id === order._id ? { ...o, status: "Completed" } : o
@@ -550,7 +590,6 @@ function CanteenDashboard() {
                       >
                         Mark Completed
                       </button>
-
                       {/* Allow revert to Preparing */}
                       <button
                         onClick={async () => {
@@ -571,28 +610,7 @@ function CanteenDashboard() {
                       </button>
                     </>
                   )}
-                  {/* ✅ NEW: Allow revert to Ready after completed */}
-                  {order.status === "Completed" && (
-                    <button
-                      onClick={async () => {
-                        await axios.put(
-                          `http://localhost:1230/api/v8/order/${order._id}/status`,
-                          { status: "Ready" },
-                          { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        setOrders((prev) =>
-                          prev.map((o) =>
-                            o._id === order._id ? { ...o, status: "Ready" } : o
-                          )
-                        );
-                      }}
-                      className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold"
-                    >
-                      Revert to Ready
-                    </button>
-                  )}
                 </div>
-
               </div>
             ))
           )}
