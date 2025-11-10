@@ -1,8 +1,9 @@
 import Order from "../models/Order.models.js";
 import Canteen from "../models/Canteen.models.js";
 import crypto from "crypto";
-import Cart from "../models/Cart.models.js"; // ✅ added to clear cart after payment
-
+import Cart from "../models/Cart.models.js";
+import client from "../services/twilioClient.js";
+import User from "../models/User.models.js";
 /**
  * 🧾 Verify Razorpay Payment and Create Order
  * This endpoint is called after successful Razorpay checkout on the frontend.
@@ -104,10 +105,7 @@ export const getCanteenOrders = async (req, res) => {
   }
 };
 
-/**
- * 🧾 Update order status (Admin only)
- * - Allowed statuses: Pending, Paid, Preparing, Ready, Completed, Cancelled
- */
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -118,18 +116,42 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     const order = await Order.findById(req.params.id).populate("canteen");
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // ✅ Ensure only the canteen’s admins can modify its orders
-    if (!order.canteen.admins.map((a) => a.toString()).includes(req.user.id)) {
+    // ✅ ensure admin owns the canteen
+    if (!order.canteen.admins.map(a => a.toString()).includes(req.user.id)) {
       return res.status(403).json({ message: "Unauthorized: not your canteen order" });
     }
 
-    // ✅ Update status
+    // ✅ update status
     order.status = status;
     await order.save();
+
+    // ✅ Fetch user
+    const user = await User.findById(order.user);
+
+    // ✅ Send WhatsApp notification
+    if (user?.mobile) {
+      let messageBody = "";
+
+      if (status === "Ready") {
+        messageBody = `🍱 Hi ${user.name}, your order from ${order.canteen.name} is ready! Please pick it up.`;
+      } else if (status === "Cancelled") {
+        messageBody = `⚠️ Hi ${user.name}, your order from ${order.canteen.name} has been cancelled by the canteen. If payment was made, it will be refunded as per policy.`;
+      }
+
+      if (messageBody) {
+        try {
+          await client.messages.create({
+            from: process.env.TWILIO_WHATSAPP_FROM,
+            to: `whatsapp:+91${user.mobile}`,
+            body: messageBody,
+          });
+        } catch (twilioErr) {
+          console.log("Twilio Notification Error:", twilioErr.message);
+        }
+      }
+    }
 
     res.json({
       success: true,
@@ -151,7 +173,11 @@ export const cancelOrderByUser = async (req, res) => {
     const userId = req.user.id;
     const orderId = req.params.id;
 
-    const order = await Order.findById(orderId);
+    // Populate full order info (canteen + items)
+    const order = await Order.findById(orderId)
+      .populate("canteen")
+      .populate("items.itemId", "name price");
+      
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
@@ -169,12 +195,41 @@ export const cancelOrderByUser = async (req, res) => {
       });
     }
 
+    // ✅ Update status
     order.status = "Cancelled";
     await order.save();
 
+    // ✅ Prepare a readable summary of cart items
+    const cartSummary = order.items
+      .map(
+        (i) => `• ${i.itemId.name} × ${i.quantity} = ₹${i.itemId.price * i.quantity}`
+      )
+      .join("\n");
+
+    // ✅ Fetch canteen + user to notify admins
+    const canteen = await Canteen.findById(order.canteen._id).populate("admins", "name mobile");
+    const user = await User.findById(userId);
+
+    // ✅ Notify all canteen admins via WhatsApp
+    try {
+      if (canteen?.admins?.length > 0) {
+        for (const admin of canteen.admins) {
+          if (admin.mobile) {
+            await client.messages.create({
+              from: process.env.TWILIO_WHATSAPP_FROM,
+              to: `whatsapp:+91${admin.mobile}`,
+              body: `🚫 *Order Cancelled*\n\nUser: *${user.name}*\nCanteen: *${canteen.name}*\n\n🛒 *Cancelled Items:*\n${cartSummary}\n\n💰 Total: ₹${order.amount}\n\nStatus: Cancelled`,
+            });
+          }
+        }
+      }
+    } catch (twilioErr) {
+      console.log("Twilio Admin Notify Error:", twilioErr.message);
+    }
+
     res.json({
       success: true,
-      message: "Order cancelled successfully",
+      message: "Order cancelled successfully and canteen notified",
       order,
     });
   } catch (err) {
@@ -186,3 +241,4 @@ export const cancelOrderByUser = async (req, res) => {
     });
   }
 };
+

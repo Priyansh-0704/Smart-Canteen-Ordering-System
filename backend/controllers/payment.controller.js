@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 import Order from "../models/Order.models.js";
 import Cart from "../models/Cart.models.js";
 import Canteen from "../models/Canteen.models.js";
-
+import client from "../services/twilioClient.js"
+import User from "../models/User.models.js"
 dotenv.config();
 
 // Initialize Razorpay
@@ -53,47 +54,74 @@ export const createPaymentOrder = async (req, res) => {
   }
 };
 
-// Verify payment signature
+
 export const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-    console.log("Received payment data:", req.body);
+    const userId = req.user.id;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ success: false, message: "Missing payment data" });
+      return res.status(400).json({ success: false, message: "Missing payment details" });
     }
 
-    // Compute expected signature
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
+    const generatedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
-    console.log("Expected signature:", expectedSignature);
-    console.log("Received signature:", razorpay_signature);
-
-    if (expectedSignature === razorpay_signature) {
-      // Update order as Paid
-      const order = await Order.findOneAndUpdate(
-        { orderId: razorpay_order_id },
-        { status: "Paid", paymentId: razorpay_payment_id },
-        { new: true }
-      );
-
-      // Clear user cart
-      await Cart.findOneAndDelete({ customer: order.user });
-
-      console.log("Payment verified and cart cleared for user:", order.user);
-
-      res.json({ success: true, message: "Payment verified", order });
-    } else {
-      console.error("Invalid signature. Payment verification failed.");
-      res.status(400).json({ success: false, message: "Invalid signature" });
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Invalid payment signature" });
     }
+
+    // ✅ Get pending order from DB
+    const existingOrder = await Order.findOne({ orderId: razorpay_order_id }).populate("items.itemId");
+    if (!existingOrder)
+      return res.status(404).json({ success: false, message: "Order not found" });
+
+    // ✅ Get canteen and user details
+    const canteen = await Canteen.findById(existingOrder.canteen).populate("admins", "name mobile");
+    const user = await User.findById(userId);
+
+    // ✅ Mark order as paid
+    existingOrder.paymentId = razorpay_payment_id;
+    existingOrder.signature = razorpay_signature;
+    existingOrder.status = "Paid";
+    await existingOrder.save();
+
+    // ✅ Clear user’s cart
+    await Cart.findOneAndDelete({ customer: userId });
+
+    // ✅ Format item list
+    const itemList = existingOrder.items
+      .map((i) => `${i.name} x${i.quantity}`)
+      .join(", ");
+
+    // ✅ Send WhatsApp notification to each canteen admin
+    for (const admin of canteen.admins) {
+      if (admin.mobile) {
+        try {
+          await client.messages.create({
+            from: process.env.TWILIO_WHATSAPP_FROM,
+            to: `whatsapp:+91${admin.mobile}`,
+            body: `🧾 *New Order Alert!*\n👤 Customer: ${user.name}\n🏫 Canteen: ${canteen.name}\n🍱 Items: ${itemList}\n💰 Amount: ₹${existingOrder.amount} (Paid)\n\n✅ Please check your dashboard for order details.`,
+          });
+        } catch (twilioErr) {
+          console.log("Twilio Admin Message Error:", twilioErr.message);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Payment verified, order updated, and notification sent",
+      order: existingOrder,
+    });
   } catch (err) {
-    console.error("Payment verification error:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("verifyPayment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error during payment verification",
+      error: err.message,
+    });
   }
 };
