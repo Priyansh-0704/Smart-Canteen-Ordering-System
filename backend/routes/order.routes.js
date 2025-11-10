@@ -5,6 +5,7 @@ import {
   getCanteenOrders,
   updateOrderStatus,
   verifyPayment,
+  cancelOrderByUser,
 } from "../controllers/order.controller.js";
 
 const router = express.Router();
@@ -29,7 +30,7 @@ router.get(
   authMiddleware(["User", "CanteenAdmin"]),
   async (req, res) => {
     try {
-      const orders = await Order.find({ user: req.user._id })
+      const orders = await Order.find({ user: req.user.id })
         .populate("canteen", "name location previewImage")
         .populate("items.itemId", "name price photo")
         .sort({ createdAt: -1 });
@@ -54,6 +55,12 @@ router.put(
   "/:id/status",
   authMiddleware(["CanteenAdmin"]),
   updateOrderStatus
+);
+
+router.put(
+  "/:id/cancel",
+  authMiddleware(["User", "CanteenAdmin"]),
+  cancelOrderByUser
 );
 
 export default router;

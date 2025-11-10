@@ -71,7 +71,7 @@ export default function CustomerDashboard() {
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed p-6 pt-24"
       style={{ backgroundImage: "url('/public/images/background.jpg')" }}>
-      
+
       <h1 className="text-4xl font-extrabold text-orange-950 text-center mb-8 drop-shadow-lg">
         Welcome to Campus Canteens
       </h1>
@@ -80,21 +80,19 @@ export default function CustomerDashboard() {
       <div className="flex justify-center gap-4 mb-10">
         <button
           onClick={() => setActiveTab("browse")}
-          className={`px-5 py-2 rounded-xl font-semibold ${
-            activeTab === "browse"
+          className={`px-5 py-2 rounded-xl font-semibold ${activeTab === "browse"
               ? "bg-amber-600 text-white shadow-lg"
               : "bg-white/70 text-amber-800"
-          }`}
+            }`}
         >
           Browse Canteens
         </button>
         <button
           onClick={() => setActiveTab("orders")}
-          className={`px-5 py-2 rounded-xl font-semibold ${
-            activeTab === "orders"
+          className={`px-5 py-2 rounded-xl font-semibold ${activeTab === "orders"
               ? "bg-amber-600 text-white shadow-lg"
               : "bg-white/70 text-amber-800"
-          }`}
+            }`}
         >
           My Orders
         </button>
@@ -121,9 +119,8 @@ export default function CustomerDashboard() {
               <div
                 key={c._id}
                 onClick={() => isOpenNow(c) && navigate(`/canteen/${c._id}`)}
-                className={`relative rounded-3xl overflow-hidden shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer ${
-                  isOpenNow(c) ? "" : "opacity-60 cursor-not-allowed"
-                }`}
+                className={`relative rounded-3xl overflow-hidden shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer ${isOpenNow(c) ? "" : "opacity-60 cursor-not-allowed"
+                  }`}
               >
                 {c.previewImage ? (
                   <img
@@ -145,9 +142,8 @@ export default function CustomerDashboard() {
                     </p>
                   )}
                   <p
-                    className={`mt-1 font-semibold ${
-                      isOpenNow(c) ? "text-green-400" : "text-red-400"
-                    }`}
+                    className={`mt-1 font-semibold ${isOpenNow(c) ? "text-green-400" : "text-red-400"
+                      }`}
                   >
                     {isOpenNow(c) ? "Open" : "Closed"}
                   </p>
@@ -185,19 +181,18 @@ export default function CustomerDashboard() {
                   </div>
 
                   <span
-                    className={`text-sm font-semibold px-3 py-1 rounded-lg ${
-                      order.status === "Paid"
+                    className={`text-sm font-semibold px-3 py-1 rounded-lg ${order.status === "Paid"
                         ? "bg-teal-100 text-teal-800"
                         : order.status === "Preparing"
-                        ? "bg-blue-100 text-blue-800"
-                        : order.status === "Ready"
-                        ? "bg-purple-100 text-purple-800"
-                        : order.status === "Completed"
-                        ? "bg-green-100 text-green-800"
-                        : order.status === "Cancelled"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
+                          ? "bg-blue-100 text-blue-800"
+                          : order.status === "Ready"
+                            ? "bg-purple-100 text-purple-800"
+                            : order.status === "Completed"
+                              ? "bg-green-100 text-green-800"
+                              : order.status === "Cancelled"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
+                      }`}
                   >
                     {order.status}
                   </span>
@@ -228,12 +223,25 @@ export default function CustomerDashboard() {
                         );
                         if (!confirmCancel) return;
 
-                        await axios.put(
-                          `http://localhost:1230/api/v8/order/${order._id}/status`,
-                          { status: "Cancelled" },
-                          { headers: { Authorization: `Bearer ${token}` } }
-                        );
+                        try {
+                          const res = await axios.put(
+                            `http://localhost:1230/api/v8/order/${order._id}/cancel`,
+                            {},
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
 
+                          if (res.data.success) {
+                            setOrders((prev) =>
+                              prev.map((o) =>
+                                o._id === order._id ? { ...o, status: "Cancelled" } : o
+                              )
+                            );
+                          } else {
+                            alert(res.data.message || "Failed to cancel order");
+                          }
+                        } catch (err) {
+                          alert(err.response?.data?.message || "Error cancelling order");
+                        }
                         setOrders((prev) =>
                           prev.map((o) =>
                             o._id === order._id
