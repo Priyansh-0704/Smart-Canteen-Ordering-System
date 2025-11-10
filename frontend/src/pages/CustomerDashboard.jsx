@@ -81,8 +81,8 @@ export default function CustomerDashboard() {
         <button
           onClick={() => setActiveTab("browse")}
           className={`px-5 py-2 rounded-xl font-semibold ${activeTab === "browse"
-              ? "bg-amber-600 text-white shadow-lg"
-              : "bg-white/70 text-amber-800"
+            ? "bg-amber-600 text-white shadow-lg"
+            : "bg-white/70 text-amber-800"
             }`}
         >
           Browse Canteens
@@ -90,8 +90,8 @@ export default function CustomerDashboard() {
         <button
           onClick={() => setActiveTab("orders")}
           className={`px-5 py-2 rounded-xl font-semibold ${activeTab === "orders"
-              ? "bg-amber-600 text-white shadow-lg"
-              : "bg-white/70 text-amber-800"
+            ? "bg-amber-600 text-white shadow-lg"
+            : "bg-white/70 text-amber-800"
             }`}
         >
           My Orders
@@ -136,17 +136,39 @@ export default function CustomerDashboard() {
                 <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-5 text-white">
                   <h2 className="text-2xl font-bold drop-shadow-md">{c.name}</h2>
                   <p className="text-sm">{c.location}</p>
+
                   {c.openingTime && c.closingTime && (
                     <p className="text-sm mt-1">
                       🕒 {c.openingTime} – {c.closingTime}
                     </p>
                   )}
+
+                  {/* ✅ Open/Closed Status */}
                   <p
                     className={`mt-1 font-semibold ${isOpenNow(c) ? "text-green-400" : "text-red-400"
                       }`}
                   >
                     {isOpenNow(c) ? "Open" : "Closed"}
                   </p>
+
+                  {/* ✅ Crowd Level Badge */}
+                  {c.crowdLevel && (
+                    <div className="mt-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-semibold
+        ${c.crowdLevel === "Low"
+                            ? "bg-green-500 text-white"
+                            : c.crowdLevel === "Moderate"
+                              ? "bg-yellow-500 text-black"
+                              : "bg-red-600 text-white"
+                          }`}
+                      >
+                        {c.crowdLevel === "Low" && "🟢 Low Crowd"}
+                        {c.crowdLevel === "Moderate" && "🟡 Moderate Crowd"}
+                        {c.crowdLevel === "Busy" && "🔴 Busy Crowd"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -182,16 +204,16 @@ export default function CustomerDashboard() {
 
                   <span
                     className={`text-sm font-semibold px-3 py-1 rounded-lg ${order.status === "Paid"
-                        ? "bg-teal-100 text-teal-800"
-                        : order.status === "Preparing"
-                          ? "bg-blue-100 text-blue-800"
-                          : order.status === "Ready"
-                            ? "bg-purple-100 text-purple-800"
-                            : order.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : order.status === "Cancelled"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
+                      ? "bg-teal-100 text-teal-800"
+                      : order.status === "Preparing"
+                        ? "bg-blue-100 text-blue-800"
+                        : order.status === "Ready"
+                          ? "bg-purple-100 text-purple-800"
+                          : order.status === "Completed"
+                            ? "bg-green-100 text-green-800"
+                            : order.status === "Cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
                       }`}
                   >
                     {order.status}

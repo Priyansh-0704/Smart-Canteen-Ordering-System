@@ -1,43 +1,59 @@
 import mongoose from "mongoose";
 import Canteen from "../models/Canteen.models.js";
 import Menu from "../models/Menu.models.js";
-
+import Order from "../models/Order.models.js";
 
 export const getAllCanteens = async (req, res) => {
   try {
     const searchQuery = req.query.q || "";
+
+    // 🔹 Fetch all canteens
     const canteens = await Canteen.find({
       name: { $regex: searchQuery, $options: "i" },
     });
 
-    // Fetch random menu photo for each canteen
-    const canteensWithImages = await Promise.all(
+    // 🔹 Enrich with image and crowd level
+    const canteensWithDetails = await Promise.all(
       canteens.map(async (canteen) => {
+        // 🖼️ Random menu image
         const menuItems = await Menu.find(
           { canteen: canteen._id, photo: { $exists: true, $ne: null } },
           "photo"
         );
-
         let randomPhoto = null;
         if (menuItems.length > 0) {
           const randomIndex = Math.floor(Math.random() * menuItems.length);
           randomPhoto = menuItems[randomIndex].photo;
         }
 
+        // 👥 Count active orders
+        const activeOrderCount = await Order.countDocuments({
+          canteen: canteen._id,
+          status: { $in: ["Paid", "Preparing"] },
+        });
+
+        // 🟢 Determine crowd level
+        let crowdLevel = "Low";
+        if (activeOrderCount >= 6 && activeOrderCount <= 12) {
+          crowdLevel = "Moderate";
+        } else if (activeOrderCount > 12) {
+          crowdLevel = "Busy";
+        }
+
         return {
           ...canteen.toObject(),
           previewImage: randomPhoto,
+          crowdLevel, // 👈 new field
         };
       })
     );
 
-    res.json({ canteens: canteensWithImages });
+    res.json({ canteens: canteensWithDetails });
   } catch (err) {
     console.error("Error fetching canteens:", err);
     res.status(500).json({ message: err.message });
   }
 };
-
 /**
  * GET /api/v5/customer/canteens/:canteenId/menu
  * Query: onlyAvailable=true, q (search within menu), page, limit
