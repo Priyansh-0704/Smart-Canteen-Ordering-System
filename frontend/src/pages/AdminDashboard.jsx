@@ -9,7 +9,6 @@ function AdminDashboard() {
   const [updateForms, setUpdateForms] = useState({});
   const token = localStorage.getItem("token");
 
-  // Fetch all canteens
   const fetchCanteens = async () => {
     try {
       const res = await axios.get("http://localhost:1230/api/v3/admin/canteens", {
@@ -25,7 +24,6 @@ function AdminDashboard() {
     fetchCanteens();
   }, []);
 
-  // Create Canteen
   const handleCreateCanteen = async () => {
     try {
       const res = await axios.post(
@@ -40,7 +38,6 @@ function AdminDashboard() {
     }
   };
 
-  // Update Canteen
   const handleUpdateCanteen = async (canteenId) => {
     try {
       const updateData = updateForms[canteenId];
@@ -57,7 +54,6 @@ function AdminDashboard() {
     }
   };
 
-  // Remove Canteen
   const handleRemoveCanteen = async (canteenId) => {
     if (!window.confirm("Are you sure you want to remove this canteen?")) return;
     try {
@@ -72,7 +68,6 @@ function AdminDashboard() {
     }
   };
 
-  // Add Admin
   const handleAddAdmin = async (canteenId) => {
     try {
       const adminData = adminForms[canteenId];
@@ -91,7 +86,6 @@ function AdminDashboard() {
     }
   };
 
-  // Remove Admin
   const handleRemoveAdmin = async (canteenId) => {
     try {
       const removeData = removeForms[canteenId];

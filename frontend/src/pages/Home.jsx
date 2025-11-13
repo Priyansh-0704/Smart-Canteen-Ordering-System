@@ -7,7 +7,6 @@ export default function Home() {
      
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-      {/* Content */}
       <div className="relative z-10 max-w-3xl text-white">
         <h1 className="text-6xl font-extrabold mb-6 drop-shadow-lg tracking-wide">
           <span className="text-amber-400">HostelEats</span>

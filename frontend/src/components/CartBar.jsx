@@ -19,7 +19,7 @@ export default function CartBar({ refresh }) {
 
   useEffect(() => {
     fetchCart();
-  }, [refresh]); // refresh changes whenever item added/removed
+  }, [refresh]);
 
   if (!cart.items || cart.items.length === 0) return null;
 

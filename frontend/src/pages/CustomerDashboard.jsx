@@ -7,11 +7,10 @@ export default function CustomerDashboard() {
   const [canteens, setCanteens] = useState([]);
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("browse"); // browse | orders
+  const [activeTab, setActiveTab] = useState("browse");
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  // ------------------- Fetch Canteens -------------------
   const fetchCanteens = async () => {
     try {
       const res = await axios.get("http://localhost:1230/api/v5/customer/canteens", {
@@ -32,7 +31,6 @@ export default function CustomerDashboard() {
     fetchCanteens();
   }, [search]);
 
-  // ------------------- Fetch My Orders -------------------
   const fetchOrders = async () => {
     try {
       const res = await axios.get("http://localhost:1230/api/v8/order/my", {
@@ -47,14 +45,12 @@ export default function CustomerDashboard() {
   useEffect(() => {
     if (activeTab === "orders") fetchOrders();
 
-    // Auto-refresh orders every 10 seconds
     const interval = setInterval(() => {
       if (activeTab === "orders") fetchOrders();
     }, 10000);
     return () => clearInterval(interval);
   }, [activeTab]);
 
-  // ------------------- Helpers -------------------
   const isOpenNow = (c) => {
     if (!c.openingTime || !c.closingTime) return c.isOpen;
     const now = new Date();
@@ -67,7 +63,6 @@ export default function CustomerDashboard() {
     return now >= openDate && now <= closeDate && c.isOpen;
   };
 
-  // ------------------- UI -------------------
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed p-6 pt-24"
       style={{ backgroundImage: "url('/public/images/background.jpg')" }}>
@@ -76,7 +71,6 @@ export default function CustomerDashboard() {
         Welcome to Campus Canteens
       </h1>
 
-      {/* Tabs */}
       <div className="flex justify-center gap-4 mb-10">
         <button
           onClick={() => setActiveTab("browse")}
@@ -98,7 +92,6 @@ export default function CustomerDashboard() {
         </button>
       </div>
 
-      {/* ---------------- Browse Canteens Tab ---------------- */}
       {activeTab === "browse" && (
         <>
           {/* Search Bar */}
@@ -113,7 +106,6 @@ export default function CustomerDashboard() {
             />
           </div>
 
-          {/* Canteen Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {canteens.map((c) => (
               <div
@@ -143,7 +135,6 @@ export default function CustomerDashboard() {
                     </p>
                   )}
 
-                  {/* ✅ Open/Closed Status */}
                   <p
                     className={`mt-1 font-semibold ${isOpenNow(c) ? "text-green-400" : "text-red-400"
                       }`}
@@ -151,7 +142,7 @@ export default function CustomerDashboard() {
                     {isOpenNow(c) ? "Open" : "Closed"}
                   </p>
 
-                  {/* ✅ Crowd Level Badge */}
+                  {/* Crowd Level Badge */}
                   {c.crowdLevel && (
                     <div className="mt-2">
                       <span
@@ -176,7 +167,7 @@ export default function CustomerDashboard() {
         </>
       )}
 
-      {/* ---------------- My Orders Tab ---------------- */}
+      {/* My Orders Tab*/}
       {activeTab === "orders" && (
         <div className="max-w-3xl mx-auto bg-white/90 rounded-2xl shadow-xl p-6">
           <h2 className="text-2xl font-bold text-amber-800 mb-6">My Orders</h2>
@@ -236,7 +227,7 @@ export default function CustomerDashboard() {
                     Total: ₹{order.amount}
                   </span>
 
-                  {/* 🚫 Allow cancel only if still Paid */}
+                  {/* Allow cancel only if still Paid */}
                   {order.status === "Paid" && (
                     <button
                       onClick={async () => {

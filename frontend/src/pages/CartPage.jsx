@@ -9,7 +9,6 @@ export default function CartPage() {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  // Fetch cart
   const fetchCart = async () => {
     try {
       const res = await axios.get("http://localhost:1230/api/v6/cart", {
@@ -36,7 +35,6 @@ export default function CartPage() {
     fetchCart();
   }, []);
 
-  // Increase quantity
   const handleIncrease = async (itemId) => {
     try {
       await axios.post(
@@ -50,7 +48,6 @@ export default function CartPage() {
     }
   };
 
-  // Decrease quantity
   const handleDecrease = async (itemId) => {
     try {
       await axios.post(
@@ -64,7 +61,6 @@ export default function CartPage() {
     }
   };
 
-  // Clear cart
   const handleClearCart = async () => {
     if (!window.confirm("Clear all items from cart?")) return;
     try {
@@ -77,7 +73,6 @@ export default function CartPage() {
     }
   };
 
-  // Razorpay payment
   const handlePayNow = async () => {
     try {
       if (!cart.canteen) return alert("Cannot determine canteen.");
@@ -87,7 +82,6 @@ export default function CartPage() {
       console.log("Cart amount:", cart.totalAmount);
       console.log("Cart canteen:", cart.canteen);
 
-      // Create order on backend
       const { data } = await axios.post(
         "http://localhost:1230/api/v7/payment/order",
         { canteenId: cart.canteen },
@@ -101,7 +95,7 @@ export default function CartPage() {
       }
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Vite env variable
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: data.order.amount,
         currency: "INR",
         name: "HostelEats",

@@ -21,7 +21,6 @@ const handleLogin = async () => {
 
     window.dispatchEvent(new Event("storage"));
 
-    // Navigate based on role
     if (res.data.role === "CanteenAdmin") {
       navigate("/canteen-dashboard");
     } else if (res.data.role === "Admin") {
