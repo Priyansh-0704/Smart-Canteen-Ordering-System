@@ -68,7 +68,6 @@ export const verifyRegisterOtp = async (req, res) => {
   }
 };
 
-// -------------------- REQUEST PASSWORD RESET --------------------
 export const requestPasswordReset = async (req, res) => {
   try {
     const { mobile } = req.body;

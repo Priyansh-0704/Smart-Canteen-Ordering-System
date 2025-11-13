@@ -8,7 +8,7 @@ const storage = new CloudinaryStorage({
     folder: "canteen_menu",
     allowed_formats: ["jpg", "jpeg", "png"],
     transformation: [
-      { width: 300, height: 300, crop: "fill" } // make it a square
+      { width: 300, height: 300, crop: "fill" }
     ],
   },
 });

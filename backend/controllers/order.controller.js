@@ -4,15 +4,11 @@ import crypto from "crypto";
 import Cart from "../models/Cart.models.js";
 import client from "../services/twilioClient.js";
 import User from "../models/User.models.js";
-/**
- * 🧾 Verify Razorpay Payment and Create Order
- * This endpoint is called after successful Razorpay checkout on the frontend.
- */
+
 export const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, cart } = req.body;
 
-    // ✅ Always use req.user.id — because auth middleware stores `id`, not `_id`
     const userId = req.user.id;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -22,7 +18,6 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // ✅ Verify Razorpay signature
     const generatedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -35,7 +30,6 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // ✅ Verify canteen exists
     const canteen = await Canteen.findById(cart?.canteen);
     if (!canteen) {
       return res.status(404).json({
@@ -44,7 +38,6 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // ✅ Create order document
     const newOrder = await Order.create({
       user: userId,
       canteen: canteen._id,
@@ -53,10 +46,9 @@ export const verifyPayment = async (req, res) => {
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
-      status: "Paid", // start in Paid state after verification
+      status: "Paid",
     });
 
-    // ✅ Clear user's cart after successful order
     await Cart.findOneAndDelete({ customer: userId });
 
     res.json({
@@ -74,16 +66,11 @@ export const verifyPayment = async (req, res) => {
   }
 };
 
-/**
- * 🧾 Get all orders for the logged-in Canteen Admin
- */
 export const getCanteenOrders = async (req, res) => {
   try {
-    // ✅ Find canteens managed by this admin
     const canteens = await Canteen.find({ admins: req.user.id }).select("_id");
     const canteenIds = canteens.map((c) => c._id);
 
-    // ✅ Fetch all orders from those canteens (latest first)
     const orders = await Order.find({ canteen: { $in: canteenIds } })
       .populate("user", "name mobile")
       .populate("items.itemId", "name price photo")
@@ -118,19 +105,15 @@ export const updateOrderStatus = async (req, res) => {
     const order = await Order.findById(req.params.id).populate("canteen");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // ✅ ensure admin owns the canteen
     if (!order.canteen.admins.map(a => a.toString()).includes(req.user.id)) {
       return res.status(403).json({ message: "Unauthorized: not your canteen order" });
     }
 
-    // ✅ update status
     order.status = status;
     await order.save();
 
-    // ✅ Fetch user
     const user = await User.findById(order.user);
 
-    // ✅ Send WhatsApp notification
     if (user?.mobile) {
       let messageBody = "";
 
@@ -173,7 +156,6 @@ export const cancelOrderByUser = async (req, res) => {
     const userId = req.user.id;
     const orderId = req.params.id;
 
-    // Populate full order info (canteen + items)
     const order = await Order.findById(orderId)
       .populate("canteen")
       .populate("items.itemId", "name price");
@@ -182,12 +164,10 @@ export const cancelOrderByUser = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // ✅ Ensure this order belongs to the logged-in user
     if (order.user.toString() !== userId.toString()) {
       return res.status(403).json({ success: false, message: "Not your order" });
     }
 
-    // ✅ Only allow cancel if still Paid or Pending
     if (!["Paid", "Pending"].includes(order.status)) {
       return res.status(400).json({
         success: false,
@@ -195,22 +175,18 @@ export const cancelOrderByUser = async (req, res) => {
       });
     }
 
-    // ✅ Update status
     order.status = "Cancelled";
     await order.save();
 
-    // ✅ Prepare a readable summary of cart items
     const cartSummary = order.items
       .map(
         (i) => `• ${i.itemId.name} × ${i.quantity} = ₹${i.itemId.price * i.quantity}`
       )
       .join("\n");
 
-    // ✅ Fetch canteen + user to notify admins
     const canteen = await Canteen.findById(order.canteen._id).populate("admins", "name mobile");
     const user = await User.findById(userId);
 
-    // ✅ Notify all canteen admins via WhatsApp
     try {
       if (canteen?.admins?.length > 0) {
         for (const admin of canteen.admins) {

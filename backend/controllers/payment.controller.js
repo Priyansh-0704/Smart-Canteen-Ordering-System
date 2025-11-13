@@ -8,13 +8,12 @@ import client from "../services/twilioClient.js"
 import User from "../models/User.models.js"
 dotenv.config();
 
-// Initialize Razorpay
+// Initializing Razorpay
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create Razorpay Order
 export const createPaymentOrder = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -28,14 +27,13 @@ export const createPaymentOrder = async (req, res) => {
     if (!canteen) return res.status(404).json({ message: "Canteen not found" });
 
     const options = {
-      amount: cart.totalAmount * 100, // amount in paise
+      amount: cart.totalAmount * 100, // we did *100 to display in paise
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
     };
 
     const order = await razorpay.orders.create(options);
 
-    // Save order as pending
     const newOrder = await Order.create({
       user: userId,
       canteen: canteenId,
@@ -73,30 +71,24 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid payment signature" });
     }
 
-    // ✅ Get pending order from DB
     const existingOrder = await Order.findOne({ orderId: razorpay_order_id }).populate("items.itemId");
     if (!existingOrder)
       return res.status(404).json({ success: false, message: "Order not found" });
 
-    // ✅ Get canteen and user details
     const canteen = await Canteen.findById(existingOrder.canteen).populate("admins", "name mobile");
     const user = await User.findById(userId);
 
-    // ✅ Mark order as paid
     existingOrder.paymentId = razorpay_payment_id;
     existingOrder.signature = razorpay_signature;
     existingOrder.status = "Paid";
     await existingOrder.save();
 
-    // ✅ Clear user’s cart
     await Cart.findOneAndDelete({ customer: userId });
 
-    // ✅ Format item list
     const itemList = existingOrder.items
       .map((i) => `${i.name} x${i.quantity}`)
       .join(", ");
 
-    // ✅ Send WhatsApp notification to each canteen admin
     for (const admin of canteen.admins) {
       if (admin.mobile) {
         try {

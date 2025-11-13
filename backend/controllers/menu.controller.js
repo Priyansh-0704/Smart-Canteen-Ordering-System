@@ -1,7 +1,6 @@
 import Menu from "../models/Menu.models.js";
 import Canteen from "../models/Canteen.models.js";
 
-// -------------------- ADD MENU ITEM --------------------
 export const addMenuItem = async (req, res) => {
   try {
     const { name, price } = req.body;
@@ -35,7 +34,6 @@ export const addMenuItem = async (req, res) => {
   }
 };
 
-// -------------------- GET MENU --------------------
 export const getMenu = async (req, res) => {
   try {
     const { canteenId } = req.params;
@@ -46,7 +44,6 @@ export const getMenu = async (req, res) => {
   }
 };
 
-// -------------------- UPDATE MENU --------------------
 export const updateMenuItem = async (req, res) => {
   try {
     const { itemId } = req.params;
@@ -70,7 +67,6 @@ export const updateMenuItem = async (req, res) => {
   }
 };
 
-// -------------------- DELETE MENU --------------------
 export const deleteMenuItem = async (req, res) => {
   try {
     const { itemId } = req.params;

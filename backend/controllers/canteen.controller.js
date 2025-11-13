@@ -1,6 +1,5 @@
 import Canteen from "../models/Canteen.models.js";
 
-// get all canteens that the logged-in admin manages
 export const getMyCanteens = async (req, res) => {
   try {
     const canteens = await Canteen.find({ admins: req.user.id });
@@ -10,7 +9,6 @@ export const getMyCanteens = async (req, res) => {
   }
 };
 
-// toggle open/close
 export const toggleCanteenStatus = async (req, res) => {
   try {
     const canteen = await Canteen.findOne({ _id: req.params.id, admins: req.user.id });
@@ -24,7 +22,7 @@ export const toggleCanteenStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-// update opening/closing times
+
 export const updateCanteenTimes = async (req, res) => {
   try {
     const { openingTime, closingTime } = req.body;
