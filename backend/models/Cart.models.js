@@ -17,7 +17,6 @@ const cartSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Auto calculate total
 cartSchema.pre("save", function (next) {
   this.totalAmount = this.items.reduce(
     (sum, item) => sum + item.price * item.quantity,

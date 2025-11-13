@@ -1,11 +1,10 @@
 import express from "express";
 import Cart from "../models/Cart.models.js";
-import Menu from "../models/Menu.models.js"; // ✅ needed to get canteen info
+import Menu from "../models/Menu.models.js";
 import { authMiddleware } from "../middleware/auth.middle.js";
 
 const router = express.Router();
 
-// 🛒 Get user's cart
 router.get("/", authMiddleware(["User"]), async (req, res) => {
   try {
     const cart = await Cart.findOne({ customer: req.user.id })
@@ -26,19 +25,16 @@ router.get("/", authMiddleware(["User"]), async (req, res) => {
   }
 });
 
-// ➕ Add or update item
 router.post("/add", authMiddleware(["User"]), async (req, res) => {
   try {
     const { itemId } = req.body;
 
-    // ✅ Fetch item from Menu to get price, name, and canteen
     const menuItem = await Menu.findById(itemId).populate("canteen", "_id");
     if (!menuItem)
       return res.status(404).json({ message: "Menu item not found" });
 
     let cart = await Cart.findOne({ customer: req.user.id });
 
-    // ✅ If no cart, create a new one with this item's canteen
     if (!cart) {
       cart = new Cart({
         customer: req.user.id,
@@ -53,16 +49,14 @@ router.post("/add", authMiddleware(["User"]), async (req, res) => {
         ],
       });
     } else {
-      // ✅ If existing cart belongs to a different canteen, reset it
       if (
         cart.canteen &&
         cart.canteen.toString() !== menuItem.canteen._id.toString()
       ) {
-        cart.items = []; // clear items
+        cart.items = [];
         cart.canteen = menuItem.canteen._id;
       }
 
-      // ✅ Add or update item quantity
       const itemIndex = cart.items.findIndex(
         (i) => i.itemId.toString() === itemId
       );
@@ -86,7 +80,6 @@ router.post("/add", authMiddleware(["User"]), async (req, res) => {
   }
 });
 
-// ➖ Remove item or decrease quantity
 router.post("/remove", authMiddleware(["User"]), async (req, res) => {
   try {
     const { itemId } = req.body;
@@ -110,7 +103,6 @@ router.post("/remove", authMiddleware(["User"]), async (req, res) => {
   }
 });
 
-// 🧹 Clear cart
 router.delete("/clear", authMiddleware(["User"]), async (req, res) => {
   try {
     await Cart.findOneAndDelete({ customer: req.user.id });

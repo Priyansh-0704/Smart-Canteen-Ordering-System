@@ -10,7 +10,6 @@ import parser from "../middleware/upload.js";
 
 const router = express.Router();
 
-// Routes
 router.post("/:canteenId/menu", authMiddleware(["CanteenAdmin"]), parser.single("photo"), addMenuItem);
 router.get("/:canteenId/menu", getMenu);
 router.put("/menu/:itemId", authMiddleware(["CanteenAdmin"]), updateMenuItem);

@@ -19,8 +19,8 @@ const orderSchema = new mongoose.Schema(
           ref: "Menu",
           required: true,
         },
-        name: { type: String, required: true },     // ✅ Snapshot
-        price: { type: Number, required: true },   // ✅ Snapshot
+        name: { type: String, required: true },
+        price: { type: Number, required: true },
         quantity: { type: Number, required: true },
       },
     ],
@@ -34,7 +34,7 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
     },
   },
-  { timestamps: true } // ✅ Includes createdAt for "Order placed on" time
+  { timestamps: true }
 );
 
 export default mongoose.model("Order", orderSchema);

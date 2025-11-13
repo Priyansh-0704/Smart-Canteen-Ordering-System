@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Send OTP
 export const sendOtpSMS = async (mobile) => {
   const number = mobile.toString().trim(); 
   console.log(`Sending OTP to +91${number} via 2Factor...`);
@@ -23,7 +22,6 @@ export const sendOtpSMS = async (mobile) => {
   }
 };
 
-// Verify OTP
 export const verifyOtpSMS = async (sessionId, otp) => {
   console.log(`Verifying OTP ${otp} with sessionId ${sessionId}...`);
 
