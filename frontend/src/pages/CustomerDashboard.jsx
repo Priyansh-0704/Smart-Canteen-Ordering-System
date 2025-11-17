@@ -64,80 +64,92 @@ export default function CustomerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-fixed p-6 pt-24"
-      style={{ backgroundImage: "url('/public/images/background.jpg')" }}>
-
-      <h1 className="text-4xl font-extrabold text-orange-950 text-center mb-8 drop-shadow-lg">
+    <div
+      className="min-h-screen bg-cover bg-center bg-fixed p-4 sm:p-6 pt-24"
+      style={{ backgroundImage: "url('/public/images/background.jpg')" }}
+    >
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-orange-950 text-center mb-6 sm:mb-8 drop-shadow-lg">
         Welcome to Campus Canteens
       </h1>
 
-      <div className="flex justify-center gap-4 mb-10">
+      {/* TABS */}
+      <div className="flex justify-center gap-3 sm:gap-4 mb-8 sm:mb-10">
         <button
           onClick={() => setActiveTab("browse")}
-          className={`px-5 py-2 rounded-xl font-semibold ${activeTab === "browse"
-            ? "bg-amber-600 text-white shadow-lg"
-            : "bg-white/70 text-amber-800"
-            }`}
+          className={`px-4 sm:px-5 py-2 rounded-xl font-semibold text-sm sm:text-base ${
+            activeTab === "browse"
+              ? "bg-amber-600 text-white shadow-lg"
+              : "bg-white/70 text-amber-800"
+          }`}
         >
           Browse Canteens
         </button>
+
         <button
           onClick={() => setActiveTab("orders")}
-          className={`px-5 py-2 rounded-xl font-semibold ${activeTab === "orders"
-            ? "bg-amber-600 text-white shadow-lg"
-            : "bg-white/70 text-amber-800"
-            }`}
+          className={`px-4 sm:px-5 py-2 rounded-xl font-semibold text-sm sm:text-base ${
+            activeTab === "orders"
+              ? "bg-amber-600 text-white shadow-lg"
+              : "bg-white/70 text-amber-800"
+          }`}
         >
           My Orders
         </button>
       </div>
 
+      {/* ------------------------- BROWSE TAB ------------------------- */}
       {activeTab === "browse" && (
         <>
           {/* Search Bar */}
-          <div className="max-w-2xl mx-auto mb-10 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-600 w-5 h-5" />
+          <div className="max-w-xl mx-auto mb-8 sm:mb-10 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-600 w-4 sm:w-5" />
             <input
               type="text"
               placeholder="Search canteens..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-2xl shadow-lg border border-amber-400 focus:ring-2 focus:ring-amber-500 outline-none bg-white/80 backdrop-blur-md"
+              className="w-full pl-12 pr-4 py-2.5 sm:py-3 rounded-2xl shadow-lg border border-amber-400 focus:ring-2 focus:ring-amber-500 outline-none bg-white/80 backdrop-blur-md text-sm sm:text-base"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {/* Canteen Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
             {canteens.map((c) => (
               <div
                 key={c._id}
                 onClick={() => isOpenNow(c) && navigate(`/canteen/${c._id}`)}
-                className={`relative rounded-3xl overflow-hidden shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer ${isOpenNow(c) ? "" : "opacity-60 cursor-not-allowed"
-                  }`}
+                className={`relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transform transition-all duration-300 hover:scale-105 cursor-pointer ${
+                  isOpenNow(c) ? "" : "opacity-60 cursor-not-allowed"
+                }`}
               >
                 {c.previewImage ? (
                   <img
                     src={c.previewImage}
-                    alt={`${c.name} Preview`}
-                    className="w-full h-64 object-cover"
+                    alt={c.name}
+                    className="w-full h-48 sm:h-60 md:h-64 object-cover"
                   />
                 ) : (
-                  <div className="w-full h-64 bg-gray-400 flex items-center justify-center text-white text-lg">
+                  <div className="w-full h-48 sm:h-60 md:h-64 bg-gray-400 flex items-center justify-center text-white text-lg">
                     No Image
                   </div>
                 )}
-                <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-5 text-white">
-                  <h2 className="text-2xl font-bold drop-shadow-md">{c.name}</h2>
-                  <p className="text-sm">{c.location}</p>
+
+                <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-3 sm:p-5 text-white">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold drop-shadow-md">
+                    {c.name}
+                  </h2>
+                  <p className="text-xs sm:text-sm">{c.location}</p>
 
                   {c.openingTime && c.closingTime && (
-                    <p className="text-sm mt-1">
+                    <p className="text-xs sm:text-sm mt-1">
                       🕒 {c.openingTime} – {c.closingTime}
                     </p>
                   )}
 
                   <p
-                    className={`mt-1 font-semibold ${isOpenNow(c) ? "text-green-400" : "text-red-400"
-                      }`}
+                    className={`mt-1 font-semibold text-xs sm:text-sm ${
+                      isOpenNow(c) ? "text-green-400" : "text-red-400"
+                    }`}
                   >
                     {isOpenNow(c) ? "Open" : "Closed"}
                   </p>
@@ -146,13 +158,13 @@ export default function CustomerDashboard() {
                   {c.crowdLevel && (
                     <div className="mt-2">
                       <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold
-        ${c.crowdLevel === "Low"
+                        className={`px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
+                          c.crowdLevel === "Low"
                             ? "bg-green-500 text-white"
                             : c.crowdLevel === "Moderate"
-                              ? "bg-yellow-500 text-black"
-                              : "bg-red-600 text-white"
-                          }`}
+                            ? "bg-yellow-500 text-black"
+                            : "bg-red-600 text-white"
+                        }`}
                       >
                         {c.crowdLevel === "Low" && "🟢 Low Crowd"}
                         {c.crowdLevel === "Moderate" && "🟡 Moderate Crowd"}
@@ -167,25 +179,29 @@ export default function CustomerDashboard() {
         </>
       )}
 
-      {/* My Orders Tab*/}
+      {/* ------------------------- MY ORDERS TAB ------------------------- */}
       {activeTab === "orders" && (
-        <div className="max-w-3xl mx-auto bg-white/90 rounded-2xl shadow-xl p-6">
-          <h2 className="text-2xl font-bold text-amber-800 mb-6">My Orders</h2>
+        <div className="max-w-3xl mx-auto bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-amber-800 mb-6">
+            My Orders
+          </h2>
 
           {orders.length === 0 ? (
-            <p className="text-gray-600 text-center py-10">No orders yet.</p>
+            <p className="text-gray-600 text-center py-10 text-sm sm:text-base">
+              No orders yet.
+            </p>
           ) : (
             orders.map((order) => (
               <div
                 key={order._id}
-                className="border rounded-xl p-5 mb-4 bg-white shadow-sm hover:shadow-md transition"
+                className="border rounded-xl p-4 sm:p-5 mb-4 bg-white shadow-sm hover:shadow-md transition"
               >
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                   <div>
-                    <p className="font-semibold text-gray-800">
+                    <p className="font-semibold text-gray-800 text-base sm:text-lg">
                       {order.canteen?.name || "Unknown Canteen"}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600">
                       {new Date(order.createdAt).toLocaleString("en-IN", {
                         dateStyle: "medium",
                         timeStyle: "short",
@@ -194,47 +210,47 @@ export default function CustomerDashboard() {
                   </div>
 
                   <span
-                    className={`text-sm font-semibold px-3 py-1 rounded-lg ${order.status === "Paid"
-                      ? "bg-teal-100 text-teal-800"
-                      : order.status === "Preparing"
+                    className={`text-xs sm:text-sm font-semibold px-3 py-1 rounded-lg ${
+                      order.status === "Paid"
+                        ? "bg-teal-100 text-teal-800"
+                        : order.status === "Preparing"
                         ? "bg-blue-100 text-blue-800"
                         : order.status === "Ready"
-                          ? "bg-purple-100 text-purple-800"
-                          : order.status === "Completed"
-                            ? "bg-green-100 text-green-800"
-                            : order.status === "Cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                      }`}
+                        ? "bg-purple-100 text-purple-800"
+                        : order.status === "Completed"
+                        ? "bg-green-100 text-green-800"
+                        : order.status === "Cancelled"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
                   >
                     {order.status}
                   </span>
                 </div>
 
-                <div className="text-sm text-gray-700 border-t pt-2 mb-3">
+                <div className="text-xs sm:text-sm text-gray-700 border-t pt-2 mb-3">
                   {order.items.map((it, idx) => (
                     <div key={idx} className="flex justify-between">
                       <span>
                         {it.name || it.itemId?.name} × {it.quantity}
                       </span>
-                      <span>₹{(it.price || it.itemId?.price) * it.quantity}</span>
+                      <span>
+                        ₹{(it.price || it.itemId?.price) * it.quantity}
+                      </span>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-800">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <span className="font-semibold text-gray-800 text-base sm:text-lg">
                     Total: ₹{order.amount}
                   </span>
 
-                  {/* Allow cancel only if still Paid */}
+                  {/* Cancel Button */}
                   {order.status === "Paid" && (
                     <button
                       onClick={async () => {
-                        const confirmCancel = window.confirm(
-                          "⚠️ Are you sure you want to request cancellation for this order?"
-                        );
-                        if (!confirmCancel) return;
+                        if (!window.confirm("Cancel this order?")) return;
 
                         try {
                           const res = await axios.put(
@@ -246,24 +262,17 @@ export default function CustomerDashboard() {
                           if (res.data.success) {
                             setOrders((prev) =>
                               prev.map((o) =>
-                                o._id === order._id ? { ...o, status: "Cancelled" } : o
+                                o._id === order._id
+                                  ? { ...o, status: "Cancelled" }
+                                  : o
                               )
                             );
-                          } else {
-                            alert(res.data.message || "Failed to cancel order");
                           }
-                        } catch (err) {
-                          alert(err.response?.data?.message || "Error cancelling order");
+                        } catch {
+                          alert("Cancel failed");
                         }
-                        setOrders((prev) =>
-                          prev.map((o) =>
-                            o._id === order._id
-                              ? { ...o, status: "Cancelled" }
-                              : o
-                          )
-                        );
                       }}
-                      className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg font-semibold"
+                      className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm px-4 py-2 rounded-lg font-semibold"
                     >
                       Request Cancellation
                     </button>

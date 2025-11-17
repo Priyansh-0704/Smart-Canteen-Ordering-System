@@ -35,13 +35,16 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-cover bg-center"
-         style={{ backgroundImage: "url('/images/background.jpg')" }}>
-      <div className="w-full max-w-md bg-white/30 backdrop-blur-xl p-8 rounded-xl shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-amber-900 mb-6">
+    <div
+      className="flex items-center justify-center min-h-screen p-4 sm:p-6 bg-cover bg-center"
+      style={{ backgroundImage: "url('/images/background.jpg')" }}
+    >
+      <div className="w-full max-w-sm sm:max-w-md bg-white/40 backdrop-blur-xl p-6 sm:p-8 rounded-xl shadow-lg">
+        <h2 className="text-xl sm:text-2xl font-bold text-center text-amber-900 mb-6">
           Forgot Password
         </h2>
 
+        {/* STEP 1 */}
         {step === 1 && (
           <>
             <input
@@ -49,17 +52,18 @@ export default function ForgotPassword() {
               placeholder="Enter Mobile Number"
               value={mobile}
               onChange={(e) => setMobile(e.target.value)}
-              className="w-full mb-4 px-4 py-2 border rounded-lg"
+              className="w-full mb-4 px-4 py-2 border rounded-lg text-sm sm:text-base"
             />
             <button
               onClick={requestOtp}
-              className="w-full bg-amber-600 text-white py-2 rounded-lg"
+              className="w-full bg-amber-600 text-white py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base"
             >
               Send OTP
             </button>
           </>
         )}
 
+        {/* STEP 2 */}
         {step === 2 && (
           <>
             <input
@@ -67,27 +71,34 @@ export default function ForgotPassword() {
               placeholder="Enter OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              className="w-full mb-4 px-4 py-2 border rounded-lg"
+              className="w-full mb-4 px-4 py-2 border rounded-lg text-sm sm:text-base"
             />
+
             <input
               type="password"
               placeholder="New Password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full mb-4 px-4 py-2 border rounded-lg"
+              className="w-full mb-4 px-4 py-2 border rounded-lg text-sm sm:text-base"
             />
+
             <button
               onClick={resetPassword}
-              className="w-full bg-amber-600 text-white py-2 rounded-lg"
+              className="w-full bg-amber-600 text-white py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base"
             >
               Reset Password
             </button>
           </>
         )}
 
-        {step === 3 && <p className="text-green-600">{success}</p>}
+        {/* STEP 3 */}
+        {step === 3 && (
+          <p className="text-green-600 text-center text-sm sm:text-base">{success}</p>
+        )}
 
-        {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+        {error && (
+          <p className="text-red-600 text-sm mt-3 text-center">{error}</p>
+        )}
       </div>
     </div>
   );

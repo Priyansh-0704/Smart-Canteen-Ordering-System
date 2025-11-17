@@ -90,7 +90,9 @@ export default function CanteenMenu() {
   };
 
   const getItemQty = (id) => {
-    const found = cart.items?.find((i) => i.itemId === id || i.itemId?._id === id);
+    const found = cart.items?.find(
+      (i) => i.itemId === id || i.itemId?._id === id
+    );
     return found ? found.quantity : 0;
   };
 
@@ -100,34 +102,36 @@ export default function CanteenMenu() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-fixed p-6 pt-24"
+      className="min-h-screen bg-cover bg-center bg-fixed p-4 sm:p-6 pt-24"
       style={{ backgroundImage: "url('/public/images/background.jpg')" }}
     >
       <button
         onClick={() => navigate(-1)}
-        className="mb-6 px-5 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition"
+        className="mb-6 px-4 sm:px-5 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition text-sm sm:text-base"
       >
         ← Back
       </button>
 
       {canteen && (
         <div className="mb-6 text-center">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-orange-950 drop-shadow-lg">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-orange-950 drop-shadow-lg">
             {canteen.name}
           </h1>
-          <p className="text-md md:text-lg text-orange-950">{canteen.location}</p>
+          <p className="text-sm sm:text-md md:text-lg text-orange-950">
+            {canteen.location}
+          </p>
         </div>
       )}
 
       {/* Search Bar */}
       <div className="max-w-md mx-auto mb-8 relative">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-600 w-5 h-5" />
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-600 w-4 h-4 sm:w-5 sm:h-5" />
         <input
           type="text"
           placeholder="Search food items..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-10 py-2.5 rounded-2xl shadow-md border border-amber-400 focus:ring-2 focus:ring-amber-500 outline-none bg-white/90 backdrop-blur-md text-gray-800 text-sm md:text-base"
+          className="w-full pl-12 pr-10 py-2 sm:py-2.5 rounded-2xl shadow-md border border-amber-400 focus:ring-2 focus:ring-amber-500 outline-none bg-white/90 backdrop-blur-md text-gray-800 text-sm md:text-base"
         />
         {search && (
           <button
@@ -140,14 +144,15 @@ export default function CanteenMenu() {
       </div>
 
       {/* Menu Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         {filteredMenu.length > 0 ? (
           filteredMenu.map((item) => {
             const qty = getItemQty(item._id);
+
             return (
               <div
                 key={item._id}
-                className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg hover:shadow-xl transform transition hover:scale-105 p-3 flex flex-col items-center"
+                className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg hover:shadow-xl transition transform hover:scale-105 p-2 sm:p-3 flex flex-col items-center"
               >
                 <img
                   src={
@@ -155,38 +160,42 @@ export default function CanteenMenu() {
                     "https://via.placeholder.com/150?text=No+Image"
                   }
                   alt={item.name}
-                  className="w-full h-36 sm:h-40 md:h-48 object-cover rounded-xl mb-3"
+                  className="w-full h-32 sm:h-36 md:h-40 lg:h-48 object-cover rounded-xl mb-3"
                 />
-                <h3 className="text-base md:text-lg font-bold text-amber-900 text-center">
+
+                <h3 className="text-sm sm:text-base md:text-lg font-bold text-amber-900 text-center">
                   {item.name}
                 </h3>
-                <p className="text-gray-800 font-medium mb-2 text-sm md:text-base">
+
+                <p className="text-gray-800 font-medium mb-2 text-xs sm:text-sm md:text-base">
                   ₹{item.price}
                 </p>
 
                 {qty === 0 ? (
                   <button
                     onClick={() => handleAdd(item)}
-                    className="bg-amber-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition"
+                    className="bg-amber-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold hover:bg-amber-700 transition"
                   >
                     Add to Cart
                   </button>
                 ) : (
-                  <div className="flex items-center gap-3 mt-auto">
+                  <div className="flex items-center gap-2 sm:gap-3 mt-auto">
                     <button
                       onClick={() => handleRemove(item)}
-                      className="bg-amber-600 text-white p-2 rounded-full hover:bg-amber-700"
+                      className="bg-amber-600 text-white p-1.5 sm:p-2 rounded-full hover:bg-amber-700"
                     >
-                      <Minus className="w-4 h-4" />
+                      <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
-                    <span className="text-lg font-semibold text-amber-900">
+
+                    <span className="text-base sm:text-lg font-semibold text-amber-900">
                       {qty}
                     </span>
+
                     <button
                       onClick={() => handleAdd(item)}
-                      className="bg-amber-600 text-white p-2 rounded-full hover:bg-amber-700"
+                      className="bg-amber-600 text-white p-1.5 sm:p-2 rounded-full hover:bg-amber-700"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 )}
