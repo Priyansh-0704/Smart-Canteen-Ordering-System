@@ -68,9 +68,7 @@ export default function CustomerDashboard() {
       className="min-h-screen bg-cover bg-center bg-fixed p-4 sm:p-6 pt-24"
       style={{ backgroundImage: "url('/public/images/background.jpg')" }}
     >
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-orange-950 text-center mb-6 sm:mb-8 drop-shadow-lg">
-        Welcome to Campus Canteens
-      </h1>
+    
 
       {/* TABS */}
       <div className="flex justify-center gap-3 sm:gap-4 mb-8 sm:mb-10">

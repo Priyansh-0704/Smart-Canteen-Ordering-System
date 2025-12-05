@@ -149,7 +149,8 @@ export default function CartPage() {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 pt-24">
+    // <-- responsive top padding that matches a fixed navbar height; no JS required
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 pt-[56px] sm:pt-[64px] lg:pt-[72px] relative z-0">
       <div className="max-w-3xl mx-auto bg-white shadow-md rounded-2xl p-4 sm:p-6">
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">

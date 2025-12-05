@@ -84,7 +84,7 @@ function CanteenDashboard() {
       );
 
       setNewItem({ name: "", price: "", image: null });
-      fetchMenu(); // Refresh menu instead of pushing item manually
+      fetchMenu();
     } catch (err) {
       console.error(err.response?.data || err.message);
     }
@@ -182,11 +182,16 @@ function CanteenDashboard() {
 
   // ----------------- UI -----------------
   return (
-    <div
-      className={`p-6 sm:p-8 lg:p-10 pt-24 min-h-screen ${
-        isCanteenOpenNow(canteens[0]) ? "bg-gray-50" : "bg-red-200"
-      }`}
-    >
+<div
+  className={`
+    p-6 sm:p-8 lg:p-10 
+    min-h-screen
+    pt-[80px]         
+    sm:pt-[90px]       
+    lg:pt-[110px]      
+    ${isCanteenOpenNow(canteens[0]) ? "bg-gray-50" : "bg-red-200"}
+  `}
+>
       {/* Canteen Info */}
       {canteens[0] && (
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">

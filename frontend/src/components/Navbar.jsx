@@ -5,6 +5,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
   const [role, setRole] = useState(localStorage.getItem("role"));
+  const [open, setOpen] = useState(false); 
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -12,8 +13,7 @@ export default function Navbar() {
       setRole(localStorage.getItem("role"));
     };
     window.addEventListener("storage", handleStorageChange);
-    return () =>
-      window.removeEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const handleLogout = () => {
@@ -44,9 +44,10 @@ export default function Navbar() {
         Hostel<span className="text-yellow-300">Eats</span>
       </h1>
 
+      {/* Desktop / tablet links  */}
       <div
         className="
-          flex items-center 
+          hidden sm:flex items-center 
           space-x-3 sm:space-x-6 
           text-sm sm:text-lg font-medium
         "
@@ -56,64 +57,117 @@ export default function Navbar() {
         </Link>
 
         {isLoggedIn && role === "Admin" && (
-          <Link
-            to="/admin-dashboard"
-            className="hover:text-yellow-200 transition-colors"
-          >
+          <Link to="/admin-dashboard" className="hover:text-yellow-200 transition-colors">
             Admin Dashboard
           </Link>
         )}
 
         {isLoggedIn && role === "CanteenAdmin" && (
           <>
-            <Link
-              to="/canteen-dashboard"
-              className="hover:text-yellow-200 transition-colors"
-            >
+            <Link to="/canteen-dashboard" className="hover:text-yellow-200 transition-colors">
               Canteen Dashboard
             </Link>
-            <Link
-              to="/customer-dashboard"
-              className="hover:text-yellow-200 transition-colors"
-            >
+            <Link to="/customer-dashboard" className="hover:text-yellow-200 transition-colors">
               Customer Dashboard
             </Link>
           </>
         )}
 
         {isLoggedIn && role === "User" && (
-          <Link
-            to="/customer-dashboard"
-            className="hover:text-yellow-200 transition-colors"
-          >
+          <Link to="/customer-dashboard" className="hover:text-yellow-200 transition-colors">
             Customer Dashboard
           </Link>
         )}
 
         {!isLoggedIn ? (
           <>
-            <Link
-              to="/register"
-              className="hover:text-yellow-200 transition-colors"
-            >
+            <Link to="/register" className="hover:text-yellow-200 transition-colors">
               Register
             </Link>
-            <Link
-              to="/signin"
-              className="hover:text-yellow-200 transition-colors"
-            >
+            <Link to="/signin" className="hover:text-yellow-200 transition-colors">
               Sign In
             </Link>
           </>
         ) : (
-          <button
-            onClick={handleLogout}
-            className="hover:text-yellow-200 transition-colors text-sm sm:text-lg"
-          >
+          <button onClick={handleLogout} className="hover:text-yellow-200 transition-colors text-sm sm:text-lg">
             Sign Out
           </button>
         )}
       </div>
+
+      {/* Mobile menu button  */}
+      <div className="sm:hidden">
+        <button
+          onClick={() => setOpen((s) => !s)}
+          aria-expanded={open}
+          aria-label={open ? "Close menu" : "Open menu"}
+          className="p-2 rounded-md hover:bg-white/10 transition"
+        >
+          {/* simple hamburger / x */}
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {open ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      </div>
+
+      {/**/}
+      {open && (
+        <div className="absolute top-full left-0 w-full bg-gradient-to-r from-amber-600 to-orange-700 text-white shadow-md sm:hidden z-40">
+          <div className="px-4 py-3 space-y-2">
+            <Link to="/" onClick={() => setOpen(false)} className="block hover:text-yellow-200 transition-colors">
+              Home
+            </Link>
+
+            {isLoggedIn && role === "Admin" && (
+              <Link to="/admin-dashboard" onClick={() => setOpen(false)} className="block hover:text-yellow-200 transition-colors">
+                Admin Dashboard
+              </Link>
+            )}
+
+            {isLoggedIn && role === "CanteenAdmin" && (
+              <>
+                <Link to="/canteen-dashboard" onClick={() => setOpen(false)} className="block hover:text-yellow-200 transition-colors">
+                  Canteen Dashboard
+                </Link>
+                <Link to="/customer-dashboard" onClick={() => setOpen(false)} className="block hover:text-yellow-200 transition-colors">
+                  Customer Dashboard
+                </Link>
+              </>
+            )}
+
+            {isLoggedIn && role === "User" && (
+              <Link to="/customer-dashboard" onClick={() => setOpen(false)} className="block hover:text-yellow-200 transition-colors">
+                Customer Dashboard
+              </Link>
+            )}
+
+            {!isLoggedIn ? (
+              <>
+                <Link to="/register" onClick={() => setOpen(false)} className="block hover:text-yellow-200 transition-colors">
+                  Register
+                </Link>
+                <Link to="/signin" onClick={() => setOpen(false)} className="block hover:text-yellow-200 transition-colors">
+                  Sign In
+                </Link>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  handleLogout();
+                }}
+                className="block hover:text-yellow-200 transition-colors text-left"
+              >
+                Sign Out
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
