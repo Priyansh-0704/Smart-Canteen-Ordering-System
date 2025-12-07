@@ -149,14 +149,12 @@ export default function CartPage() {
     );
 
   return (
-    // <-- responsive top padding that matches a fixed navbar height; no JS required
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 pt-[56px] sm:pt-[64px] lg:pt-[72px] relative z-0">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 pt-[56px] sm:pt-[64px] lg:pt-[72px]">
       <div className="max-w-3xl mx-auto bg-white shadow-md rounded-2xl p-4 sm:p-6">
-        {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-amber-700 font-semibold hover:underline text-sm sm:text-base"
+            className="flex items-center gap-2 text-amber-700 font-semibold hover:underline"
           >
             <ArrowLeft size={18} /> Back
           </button>
@@ -167,17 +165,16 @@ export default function CartPage() {
 
           <button
             onClick={handleClearCart}
-            className="text-red-600 hover:text-red-800 font-semibold flex items-center gap-1 text-sm sm:text-base"
+            className="text-red-600 hover:text-red-800 font-semibold flex items-center gap-1"
           >
             <Trash2 size={18} /> Clear All
           </button>
         </div>
 
-        {/* ITEMS */}
         <div className="divide-y">
           {cart.items.map((item) => (
             <div
-              key={item.itemId}
+              key={item.itemId?._id || item.itemId}
               className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4"
             >
               <div className="flex-1">
@@ -194,7 +191,9 @@ export default function CartPage() {
 
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
-                  onClick={() => handleDecrease(item.itemId)}
+                  onClick={() =>
+                    handleDecrease(item.itemId?._id || item.itemId)
+                  }
                   className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-700"
                 >
                   <Minus size={16} />
@@ -205,7 +204,9 @@ export default function CartPage() {
                 </span>
 
                 <button
-                  onClick={() => handleIncrease(item.itemId)}
+                  onClick={() =>
+                    handleIncrease(item.itemId?._id || item.itemId)
+                  }
                   className="p-2 rounded-full bg-green-100 hover:bg-green-200 text-green-700"
                 >
                   <Plus size={16} />
@@ -219,7 +220,6 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* TOTAL + BUTTONS */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mt-6 border-t pt-4 gap-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
