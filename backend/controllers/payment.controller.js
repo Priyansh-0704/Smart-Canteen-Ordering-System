@@ -4,9 +4,22 @@ import dotenv from "dotenv";
 import Order from "../models/Order.models.js";
 import Cart from "../models/Cart.models.js";
 import Canteen from "../models/Canteen.models.js";
-import client from "../services/twilioClient.js"
-import User from "../models/User.models.js"
+import client from "../services/twilioClient.js";
+import User from "../models/User.models.js";
+
 dotenv.config();
+
+// WhatsApp number formatter
+const formatWhatsappNumber = (mobile) => {
+  if (!mobile) return null;
+  const digits = mobile.toString().replace(/\D/g, "");
+
+  if (digits.length === 10) return `whatsapp:+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `whatsapp:+${digits}`;
+  if (digits.length === 11 && digits.startsWith("0")) return `whatsapp:+91${digits.slice(1)}`;
+
+  return `whatsapp:+${digits}`;
+};
 
 // Initializing Razorpay
 const razorpay = new Razorpay({
@@ -27,7 +40,7 @@ export const createPaymentOrder = async (req, res) => {
     if (!canteen) return res.status(404).json({ message: "Canteen not found" });
 
     const options = {
-      amount: cart.totalAmount * 100, // we did *100 to display in paise
+      amount: cart.totalAmount * 100,
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
     };
@@ -52,14 +65,15 @@ export const createPaymentOrder = async (req, res) => {
   }
 };
 
-
 export const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     const userId = req.user.id;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ success: false, message: "Missing payment details" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing payment details" });
     }
 
     const generatedSignature = crypto
@@ -68,14 +82,24 @@ export const verifyPayment = async (req, res) => {
       .digest("hex");
 
     if (generatedSignature !== razorpay_signature) {
-      return res.status(400).json({ success: false, message: "Invalid payment signature" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid payment signature" });
     }
 
-    const existingOrder = await Order.findOne({ orderId: razorpay_order_id }).populate("items.itemId");
-    if (!existingOrder)
-      return res.status(404).json({ success: false, message: "Order not found" });
+    const existingOrder = await Order.findOne({ orderId: razorpay_order_id })
+      .populate("items.itemId"); // so we can access itemId.name
 
-    const canteen = await Canteen.findById(existingOrder.canteen).populate("admins", "name mobile");
+    if (!existingOrder) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    const canteen = await Canteen.findById(existingOrder.canteen).populate(
+      "admins",
+      "name mobile"
+    );
     const user = await User.findById(userId);
 
     existingOrder.paymentId = razorpay_payment_id;
@@ -86,22 +110,40 @@ export const verifyPayment = async (req, res) => {
     await Cart.findOneAndDelete({ customer: userId });
 
     const itemList = existingOrder.items
-      .map((i) => `${i.name} x${i.quantity}`)
+      .map((i) => `${i.itemId?.name || "Item"} x${i.quantity}`)
       .join(", ");
 
-    for (const admin of canteen.admins) {
-      if (admin.mobile) {
+    // ---------- WhatsApp notify to admins ----------
+    if (canteen?.admins?.length) {
+      for (const admin of canteen.admins) {
+        if (!admin.mobile) continue;
+
+        const to = formatWhatsappNumber(admin.mobile);
+
+        console.log("🔔 WhatsApp to admin (payment verified):", {
+          rawMobile: admin.mobile,
+          to,
+        });
+
         try {
-          await client.messages.create({
+          const resp = await client.messages.create({
             from: process.env.TWILIO_WHATSAPP_FROM,
-            to: `whatsapp:+91${admin.mobile}`,
-            body: `🧾 *New Order Alert!*\n👤 Customer: ${user.name}\n🏫 Canteen: ${canteen.name}\n🍱 Items: ${itemList}\n💰 Amount: ₹${existingOrder.amount} (Paid)\n\n✅ Please check your dashboard for order details.`,
+            to,
+            body: `🧾 *New Order Alert!*\n👤 Customer: ${user?.name}\n🏫 Canteen: ${canteen.name}\n🍱 Items: ${itemList}\n💰 Amount: ₹${existingOrder.amount} (Paid)\n\n✅ Please check your dashboard for order details.`,
           });
+
+          console.log("✅ Twilio admin payment SID:", resp.sid);
         } catch (twilioErr) {
-          console.log("Twilio Admin Message Error:", twilioErr.message);
+          console.log("❌ Twilio Admin Message Error:", {
+            message: twilioErr.message,
+            code: twilioErr.code,
+            moreInfo: twilioErr.moreInfo,
+            status: twilioErr.status,
+          });
         }
       }
     }
+    // -----------------------------------------------
 
     res.json({
       success: true,

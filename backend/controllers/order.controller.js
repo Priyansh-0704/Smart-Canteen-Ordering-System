@@ -5,9 +5,28 @@ import Cart from "../models/Cart.models.js";
 import client from "../services/twilioClient.js";
 import User from "../models/User.models.js";
 
+// helper to format WhatsApp number
+const formatWhatsappNumber = (mobile) => {
+  if (!mobile) return null;
+  const digits = mobile.toString().replace(/\D/g, "");
+
+  if (digits.length === 10) return `whatsapp:+91${digits}`; 
+  if (digits.length === 12 && digits.startsWith("91"))
+    return `whatsapp:+${digits}`;
+  if (digits.length === 11 && digits.startsWith("0"))
+    return `whatsapp:+91${digits.slice(1)}`;
+
+  return `whatsapp:+${digits}`;
+};
+
 export const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, cart } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      cart,
+    } = req.body;
 
     const userId = req.user.id;
 
@@ -30,7 +49,11 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    const canteen = await Canteen.findById(cart?.canteen);
+    // canteen with admins so we can notify them
+    const canteen = await Canteen.findById(cart?.canteen).populate(
+      "admins",
+      "name mobile"
+    );
     if (!canteen) {
       return res.status(404).json({
         success: false,
@@ -50,6 +73,70 @@ export const verifyPayment = async (req, res) => {
     });
 
     await Cart.findOneAndDelete({ customer: userId });
+
+    // ---------- WhatsApp notifications on order creation ----------
+    try {
+      const user = await User.findById(userId);
+
+      const itemsSummary = newOrder.items
+        .map(
+          (i) =>
+            `• ${i.itemId?.name || "Item"} × ${i.quantity} = ₹${
+              i.price || "?"
+            }`
+        )
+        .join("\n");
+
+      // 1) Notify user
+      if (user?.mobile) {
+        const to = formatWhatsappNumber(user.mobile);
+        const body = `✅ Hi ${user.name}, your order from *${canteen.name}* has been placed successfully.\n\n💰 Amount: ₹${newOrder.amount}\n🧾 Order ID: ${newOrder._id}\n\nWe'll notify you when it is ready for pickup.`;
+
+        console.log("🔔 WhatsApp to user (order create):", {
+          rawMobile: user.mobile,
+          to,
+        });
+
+        const resp = await client.messages.create({
+          from: process.env.TWILIO_WHATSAPP_FROM,
+          to,
+          body,
+        });
+
+        console.log("✅ Twilio user order SID:", resp.sid);
+      }
+
+      // 2) Notify all canteen admins
+      if (canteen?.admins?.length > 0) {
+        for (const admin of canteen.admins) {
+          if (!admin.mobile) continue;
+
+          const to = formatWhatsappNumber(admin.mobile);
+          const body = `🆕 *New Order Received*\n\nUser: *${user?.name}*\nCanteen: *${canteen.name}*\n\n🛒 Items:\n${itemsSummary}\n\n💰 Total: ₹${newOrder.amount}\nStatus: ${newOrder.status}`;
+
+          console.log("🔔 WhatsApp to admin (order create):", {
+            rawMobile: admin.mobile,
+            to,
+          });
+
+          const resp = await client.messages.create({
+            from: process.env.TWILIO_WHATSAPP_FROM,
+            to,
+            body,
+          });
+
+          console.log("✅ Twilio admin order SID:", resp.sid);
+        }
+      }
+    } catch (twilioErr) {
+      console.log("❌ Twilio notify on create error:", {
+        message: twilioErr.message,
+        code: twilioErr.code,
+        moreInfo: twilioErr.moreInfo,
+        status: twilioErr.status,
+      });
+    }
+    // -------------------------------------------------------------
 
     res.json({
       success: true,
@@ -92,12 +179,18 @@ export const getCanteenOrders = async (req, res) => {
   }
 };
 
-
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
-    const validStatuses = ["Pending", "Paid", "Preparing", "Ready", "Completed", "Cancelled"];
+    const validStatuses = [
+      "Pending",
+      "Paid",
+      "Preparing",
+      "Ready",
+      "Completed",
+      "Cancelled",
+    ];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status value" });
     }
@@ -105,8 +198,10 @@ export const updateOrderStatus = async (req, res) => {
     const order = await Order.findById(req.params.id).populate("canteen");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (!order.canteen.admins.map(a => a.toString()).includes(req.user.id)) {
-      return res.status(403).json({ message: "Unauthorized: not your canteen order" });
+    if (!order.canteen.admins.map((a) => a.toString()).includes(req.user.id)) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: not your canteen order" });
     }
 
     order.status = status;
@@ -124,14 +219,28 @@ export const updateOrderStatus = async (req, res) => {
       }
 
       if (messageBody) {
+        const to = formatWhatsappNumber(user.mobile);
+
+        console.log("🔔 WhatsApp to user (status):", {
+          rawMobile: user.mobile,
+          to,
+          status,
+        });
+
         try {
-          await client.messages.create({
+          const resp = await client.messages.create({
             from: process.env.TWILIO_WHATSAPP_FROM,
-            to: `whatsapp:+91${user.mobile}`,
+            to,
             body: messageBody,
           });
+          console.log("✅ Twilio user notify SID:", resp.sid);
         } catch (twilioErr) {
-          console.log("Twilio Notification Error:", twilioErr.message);
+          console.log("❌ Twilio Notification Error:", {
+            message: twilioErr.message,
+            code: twilioErr.code,
+            moreInfo: twilioErr.moreInfo,
+            status: twilioErr.status,
+          });
         }
       }
     }
@@ -159,13 +268,17 @@ export const cancelOrderByUser = async (req, res) => {
     const order = await Order.findById(orderId)
       .populate("canteen")
       .populate("items.itemId", "name price");
-      
+
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
     if (order.user.toString() !== userId.toString()) {
-      return res.status(403).json({ success: false, message: "Not your order" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Not your order" });
     }
 
     if (!["Paid", "Pending"].includes(order.status)) {
@@ -180,27 +293,47 @@ export const cancelOrderByUser = async (req, res) => {
 
     const cartSummary = order.items
       .map(
-        (i) => `• ${i.itemId.name} × ${i.quantity} = ₹${i.itemId.price * i.quantity}`
+        (i) =>
+          `• ${i.itemId.name} × ${i.quantity} = ₹${
+            i.itemId.price * i.quantity
+          }`
       )
       .join("\n");
 
-    const canteen = await Canteen.findById(order.canteen._id).populate("admins", "name mobile");
+    const canteen = await Canteen.findById(order.canteen._id).populate(
+      "admins",
+      "name mobile"
+    );
     const user = await User.findById(userId);
 
     try {
       if (canteen?.admins?.length > 0) {
         for (const admin of canteen.admins) {
           if (admin.mobile) {
-            await client.messages.create({
+            const to = formatWhatsappNumber(admin.mobile);
+
+            console.log("🔔 WhatsApp to admin (cancel):", {
+              rawMobile: admin.mobile,
+              to,
+            });
+
+            const resp = await client.messages.create({
               from: process.env.TWILIO_WHATSAPP_FROM,
-              to: `whatsapp:+91${admin.mobile}`,
+              to,
               body: `🚫 *Order Cancelled*\n\nUser: *${user.name}*\nCanteen: *${canteen.name}*\n\n🛒 *Cancelled Items:*\n${cartSummary}\n\n💰 Total: ₹${order.amount}\n\nStatus: Cancelled`,
             });
+
+            console.log("✅ Twilio admin notify SID:", resp.sid);
           }
         }
       }
     } catch (twilioErr) {
-      console.log("Twilio Admin Notify Error:", twilioErr.message);
+      console.log("❌ Twilio Admin Notify Error:", {
+        message: twilioErr.message,
+        code: twilioErr.code,
+        moreInfo: twilioErr.moreInfo,
+        status: twilioErr.status,
+      });
     }
 
     res.json({
@@ -217,4 +350,3 @@ export const cancelOrderByUser = async (req, res) => {
     });
   }
 };
-

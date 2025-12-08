@@ -191,9 +191,7 @@ export default function CartPage() {
 
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
-                  onClick={() =>
-                    handleDecrease(item.itemId?._id || item.itemId)
-                  }
+                  onClick={() => handleDecrease(item.itemId._id || item.itemId)}
                   className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-700"
                 >
                   <Minus size={16} />
@@ -204,9 +202,7 @@ export default function CartPage() {
                 </span>
 
                 <button
-                  onClick={() =>
-                    handleIncrease(item.itemId?._id || item.itemId)
-                  }
+                  onClick={() => handleIncrease(item.itemId._id || item.itemId)}
                   className="p-2 rounded-full bg-green-100 hover:bg-green-200 text-green-700"
                 >
                   <Plus size={16} />
