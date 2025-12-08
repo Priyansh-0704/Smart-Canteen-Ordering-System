@@ -42,14 +42,18 @@ export default function CustomerDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (activeTab === "orders") fetchOrders();
+useEffect(() => {
+  if (!token) return;
+  if (activeTab === "orders") fetchOrders();
+}, [activeTab, token]);
 
-    const interval = setInterval(() => {
-      if (activeTab === "orders") fetchOrders();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [activeTab]);
+useEffect(() => {
+  if (activeTab !== "orders") return;
+
+  const interval = setInterval(fetchOrders, 10000);
+  return () => clearInterval(interval);
+}, [activeTab]);
+
 
   const isOpenNow = (c) => {
     if (!c.openingTime || !c.closingTime) return c.isOpen;
@@ -64,10 +68,11 @@ export default function CustomerDashboard() {
   };
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-fixed p-4 sm:p-6 pt-24"
-      style={{ backgroundImage: "url('/public/images/background.jpg')" }}
-    >
+ <div
+  className="min-h-screen bg-contain bg-repeat bg-top p-4 sm:p-6 pt-32 lg:pt-40"
+  style={{ backgroundImage: "url('/images/background.jpg')" }}
+>
+
     
 
       {/* TABS */}
@@ -179,7 +184,8 @@ export default function CustomerDashboard() {
 
       {/* ------------------------- MY ORDERS TAB ------------------------- */}
       {activeTab === "orders" && (
-        <div className="max-w-3xl mx-auto bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6">
+      <div className="max-w-3xl mx-auto bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 min-h-[70vh]">
+
           <h2 className="text-xl sm:text-2xl font-bold text-amber-800 mb-6">
             My Orders
           </h2>
