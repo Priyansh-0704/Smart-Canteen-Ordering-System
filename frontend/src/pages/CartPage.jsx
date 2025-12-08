@@ -197,14 +197,14 @@ export default function CartPage() {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => handleDecrease(item.itemId)}
+                  onClick={() => handleDecrease(item.itemId._id || item.itemId)}
                   className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-700"
                 >
                   <Minus size={16} />
                 </button>
                 <span className="font-semibold">{item.quantity}</span>
                 <button
-                  onClick={() => handleIncrease(item.itemId)}
+                  onClick={() => handleIncrease(item.itemId._id || item.itemId)}
                   className="p-2 rounded-full bg-green-100 hover:bg-green-200 text-green-700"
                 >
                   <Plus size={16} />
